@@ -16,8 +16,10 @@ See module.itop-object-copier.php for examples.
 For any source object, you will have to define a rule:
  * source_scope: an OQL (no parameter)
  * allowed_profiles: A CSV list of profiles. If no profile is defined then anybody can see the menu
- * label: Label or dictionary entry
- * dest_class: Class of the object to create
+ * menu_label: Label or dictionary entry for the new menu entry
+ * form_label: Label or dictionary entry for the form header
+ * report_label: Label or dictionary entry for the report once the object has been created
+ * dest_class: Class of the object to create. If empty, it defaults to the class of the source object
  * preset: Series of actions to preset the object in the creation form
  * retrofit: Series of actions to retrofit some information from the created object to the source object
 
@@ -32,7 +34,7 @@ List of actions:
  * clone(att1,att2,...): clone the given attributes
  * reset(att1): reset the attribute to its default value
  * copy(attRead,attWrite): copy an attribute ('id' can be used here)
- * append(att,string): appends a literal to the attribute
- * set(att,value): sets a value
+ * append(att,string): appends a literal to the attribute, placeholders are available (e.g. $this->name$)
+ * set(att,value): sets a value, placeholders are available (e.g. $this->name$)
  * add_to_list(attRead,attWrite,attLink,value): attRead is an external key on the read object, attWrite is a N-N link set on the written object, attLink is an attribute on the link class that will be set to <value>. 
         

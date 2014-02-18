@@ -47,20 +47,23 @@ SetupWebPage::AddModule(
 				array(
 					'source_scope' => 'SELECT Location',
 					'allowed_profiles' => 'Administrator,Configuration Manager',
-					'label' => 'Clone', // Label or dictionary entry
+					'menu_label' => 'Clone...', // Label or dictionary entry
+					'form_label' => 'Cloning %1$s', // Label or dictionary entry
+					'report_label' => 'Cloned from %1$s', // Label or dictionary entry
 					'dest_class' => 'Location', // Class of the new object
 					'preset' => array( // Series of actions to preset the object in the creation form
 						'clone_scalars(*)',
 						'reset(name)',
 					),
 					'retrofit' => array( // Series of actions to retrofit some information from the created object to the source object
-						'copy(id,country)',
 					),
 				),
 				array(
 					'source_scope' => 'SELECT UserRequest',
 					'allowed_profiles' => '', // Empty => anybody
-					'label' => 'Create a child request', // Label or dictionary entry
+					'menu_label' => 'Clone...', // Label or dictionary entry
+					'form_label' => 'Cloning %1$s', // Label or dictionary entry
+					'report_label' => 'Cloned from %1$s', // Label or dictionary entry
 					'dest_class' => 'UserRequest', // Class of the new object
 					'preset' => array( // Series of actions to preset the object in the creation form
 						'clone_scalars()',
@@ -75,6 +78,17 @@ SetupWebPage::AddModule(
 					),
 					'retrofit' => array(// Series of actions to retrofit some information from the created object to the source object
 						//'copy(id, parent_request_id)'
+					),
+				),
+				array(
+					'source_scope' => 'SELECT FunctionalCI',
+					'allowed_profiles' => 'Administrator,Configuration Manager',
+					'dest_class' => 'Location', // Class of the new object
+					'preset' => array( // Series of actions to preset the object in the creation form
+						'clone_scalars(*)',
+						'reset(name)',
+					),
+					'retrofit' => array( // Series of actions to retrofit some information from the created object to the source object
 					),
 				),
 			)

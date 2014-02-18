@@ -33,11 +33,6 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	public static function IsRuleValid($iRule, $aRuleData)
 	{
 		$bRet = true;
-		if (!isset($aRuleData['label']))
-		{
-			IssueLog::Error('Module itop-object-copy - invalid rule #'.$iRule.' - missing "label"');
-			$bRet = false;
-		}
 		if (!isset($aRuleData['source_scope']))
 		{
 			IssueLog::Error('Module itop-object-copy - invalid rule #'.$iRule.' - missing "source_scope"');
@@ -149,7 +144,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 								$aRet[] = new URLPopupMenuItem
 								(
 									'object_copier_'.$iRule,
-									Dict::S($aRuleData['label']),
+									self::FormatMessage($aRuleData, 'menu_label'),
 									utils::GetAbsoluteUrlModulePage('itop-object-copier', 'copy.php', $aParams)
 								);
 							}
@@ -288,13 +283,17 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 		case 'set':
 			$sAttCode = $aParams[0];
-			$sValue = $aParams[1];
+			$sRawValue = $aParams[1];
+			$aContext = $oObjectToRead->ToArgs('this');
+			$sValue = MetaModel::ApplyParams($sRawValue, $aContext);
 			$oObjectToWrite->Set($sAttCode, $sValue);
 			break;
 
 		case 'append':
 			$sAttCode = $aParams[0];
-			$sAddendum = $aParams[1];
+			$sRawAddendum = $aParams[1];
+			$aContext = $oObjectToRead->ToArgs('this');
+			$sAddendum = MetaModel::ApplyParams($sRawAddendum, $aContext);
 			$oObjectToWrite->Set($sAttCode, $this->GetAttValue($oObjectToWrite, $sAttCode).$sAddendum);
 			break;
 		
@@ -327,5 +326,35 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		default:
 			throw new Exception("Invalid verb");
 		}
+	}
+
+	/**
+	 * Format the labels depending on the rule settings, and defaulting to dictionary entries
+	 * @param aRuleData Rule settings
+	 * @param sMsgCode The code in the rule settings and default dictionary (e.g. menu_label, defaulting to object-copier:menu_label:default)
+	 * @param oSourceObject Optional: the source object	 	 	 
+	 */	 	
+	public static function FormatMessage($aRuleData, $sMsgCode, $oSourceObject = null)
+	{
+		if (isset($aRuleData[$sMsgCode]) && strlen($aRuleData[$sMsgCode]) > 0)
+		{
+			$sDictEntry = $aRuleData[$sMsgCode];
+		}
+		else
+		{
+			$sDictEntry = 'object-copier:'.$sMsgCode.':default';
+		}
+		if ($oSourceObject)
+		{
+			// The format function does not format if the string is not a dictionary entry
+			// so we do it ourselves here
+			$sFormat = Dict::S($sDictEntry);
+			$sRet = sprintf($sFormat, $oSourceObject->GetHyperlink());
+		}
+		else
+		{
+			$sRet = Dict::S($sDictEntry);
+		}
+		return $sRet;
 	}
 }

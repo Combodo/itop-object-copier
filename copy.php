@@ -151,11 +151,18 @@ try
 			if ($bCheckSubClass)
 			{
 				$sClass = $aRuleData['dest_class'];
+				if ($sClass == '')
+				{
+					$sClass = $sSourceClass;
+				}
 			}
 			else
 			{
 				$sClass = utils::ReadParam('class', true);
 			}
+			$oSourceObject = MetaModel::GetObject($sSourceClass, $iSourceId);
+			$sTitle = iTopObjectCopier::FormatMessage($aRuleData, 'form_label', $oSourceObject);
+			$oP->add("<div class=\"header_message message_info\">$sTitle</div>\n");
 
 			// If the specified class has subclasses, ask the user an instance of which class to create
 			$aSubClasses = MetaModel::EnumChildClasses($sClass, ENUM_CHILD_CLASSES_ALL); // Including the specified class itself
@@ -210,7 +217,6 @@ try
 				$oObjToClone->UpdateObjectFromArg('default');
 
 				// Specific to itop-object-copier
-				$oSourceObject = MetaModel::GetObject($sSourceClass, $iSourceId);
 				iTopObjectCopier::PrepareObject($aRuleData, $oObjToClone, $oSourceObject);
 
 				cmdbAbstractObject::DisplayCreationForm($oP, $sRealClass, $oObjToClone, array(), $aCopyArgs);
@@ -332,7 +338,8 @@ try
 				$oSourceObject->DBUpdate();
 
 				// Specific to itop-object-copier
-				cmdbAbstractObject::SetSessionMessage(get_class($oObj), $oObj->GetKey(), 'object-copier', 'Created from '.$oSourceObject->GetHyperlink(), 'info', 0, true /* must not exist */);
+				$sMessage = iTopObjectCopier::FormatMessage($aRuleData, 'report_label', $oSourceObject);
+				cmdbAbstractObject::SetSessionMessage(get_class($oObj), $oObj->GetKey(), 'object-copier', $sMessage, 'info', 0, true /* must not exist */);
 
 				utils::RemoveTransaction($sTransactionId);
 				$oP->set_title(Dict::S('UI:PageTitle:ObjectCreated'));
