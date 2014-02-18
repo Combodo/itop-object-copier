@@ -340,7 +340,14 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		$sCodeWithLang = $sMsgCode.'/'.$sLangCode;
 		if (isset($aRuleData[$sCodeWithLang]) && strlen($aRuleData[$sCodeWithLang]) > 0)
 		{
-			$sRet = $aRuleData[$sCodeWithLang];
+			if ($oSourceObject)
+			{
+				$sRet = sprintf($aRuleData[$sCodeWithLang], $oSourceObject->GetHyperlink());
+			}
+			else
+			{
+				$sRet = $aRuleData[$sCodeWithLang];
+			}
 		}
 		else
 		{
