@@ -48,8 +48,11 @@ SetupWebPage::AddModule(
 					'source_scope' => 'SELECT Location',
 					'allowed_profiles' => 'Administrator,Configuration Manager',
 					'menu_label' => 'Clone...', // Label or dictionary entry
+					'menu_label/FR FR' => 'Cloner...', // Label
 					'form_label' => 'Cloning %1$s', // Label or dictionary entry
+					'form_label/FR FR' => 'Clonage de %1$s', // Label
 					'report_label' => 'Cloned from %1$s', // Label or dictionary entry
+					'report_label/FR FR' => 'Cloné depuis %1$s', // Label
 					'dest_class' => 'Location', // Class of the new object
 					'preset' => array( // Series of actions to preset the object in the creation form
 						'clone_scalars(*)',
@@ -83,7 +86,7 @@ SetupWebPage::AddModule(
 				array(
 					'source_scope' => 'SELECT FunctionalCI',
 					'allowed_profiles' => 'Administrator,Configuration Manager',
-					'dest_class' => 'Location', // Class of the new object
+					'dest_class' => '', // Same class as the source object
 					'preset' => array( // Series of actions to preset the object in the creation form
 						'clone_scalars(*)',
 						'reset(name)',

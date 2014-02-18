@@ -23,6 +23,12 @@ For any source object, you will have to define a rule:
  * preset: Series of actions to preset the object in the creation form
  * retrofit: Series of actions to retrofit some information from the created object to the source object
 
+To localize the labels, append the language code to the setting code.
+For instance, to handle french and english (english being the default), you will have to define
+ * 'menu_label' and 'menu_label/FR FR'
+ * 'form_label' and 'form_label/FR FR'
+ * 'report_label' and 'report_label/FR FR'
+
 The actions availables to preset or retrofit are the same.
 Anyhow, the read/written objects will vary depending on the situation:
  * preset: reads the source object and writes the new object

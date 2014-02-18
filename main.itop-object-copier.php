@@ -336,24 +336,33 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	 */	 	
 	public static function FormatMessage($aRuleData, $sMsgCode, $oSourceObject = null)
 	{
-		if (isset($aRuleData[$sMsgCode]) && strlen($aRuleData[$sMsgCode]) > 0)
+		$sLangCode = Dict::GetUserLanguage();
+		$sCodeWithLang = $sMsgCode.'/'.$sLangCode;
+		if (isset($aRuleData[$sCodeWithLang]) && strlen($aRuleData[$sCodeWithLang]) > 0)
 		{
-			$sDictEntry = $aRuleData[$sMsgCode];
+			$sRet = $aRuleData[$sCodeWithLang];
 		}
 		else
 		{
-			$sDictEntry = 'object-copier:'.$sMsgCode.':default';
-		}
-		if ($oSourceObject)
-		{
-			// The format function does not format if the string is not a dictionary entry
-			// so we do it ourselves here
-			$sFormat = Dict::S($sDictEntry);
-			$sRet = sprintf($sFormat, $oSourceObject->GetHyperlink());
-		}
-		else
-		{
-			$sRet = Dict::S($sDictEntry);
+			if (isset($aRuleData[$sMsgCode]) && strlen($aRuleData[$sMsgCode]) > 0)
+			{
+				$sDictEntry = $aRuleData[$sMsgCode];
+			}
+			else
+			{
+				$sDictEntry = 'object-copier:'.$sMsgCode.':default';
+			}
+			if ($oSourceObject)
+			{
+				// The format function does not format if the string is not a dictionary entry
+				// so we do it ourselves here
+				$sFormat = Dict::S($sDictEntry);
+				$sRet = sprintf($sFormat, $oSourceObject->GetHyperlink());
+			}
+			else
+			{
+				$sRet = Dict::S($sDictEntry);
+			}
 		}
 		return $sRet;
 	}
