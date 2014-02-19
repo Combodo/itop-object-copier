@@ -220,9 +220,9 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		{
 			try
 			{
-				if (preg_match('/^(\S*)\s*\((.*)\)$/', $sAction, $aMatches))
+				if (preg_match('/^(\S*)\s*\((.*)\)$/ms', $sAction, $aMatches)) // multiline and newline matched by a dot
 				{
-					$sVerb = $aMatches[1];
+					$sVerb = trim($aMatches[1]);
 					$sParams = $aMatches[2];
 		
 					// the coma is the separator for the parameters
@@ -298,6 +298,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		case 'clone':
 			foreach($aParams as $sAttCode)
 			{
+				$sAttCode = trim($sAttCode);
 				$this->SetAtt($oObjectToWrite, $sAttCode, $this->GetAtt($oObjectToRead, $sAttCode));
 			}
 			break;
@@ -313,13 +314,13 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			break;
 
 		case 'copy':
-			$sSourceAttCode = $aParams[0];
-			$sDestAttCode = $aParams[1];
+			$sSourceAttCode = trim($aParams[0]);
+			$sDestAttCode = trim($aParams[1]);
 			$this->SetAtt($oObjectToWrite, $sDestAttCode, $this->GetAtt($oObjectToRead, $sSourceAttCode));
 			break;
 
 		case 'reset':
-			$sAttCode = $aParams[0];
+			$sAttCode = trim($aParams[0]);
 			if (!MetaModel::IsValidAttCode(get_class($oObjectToWrite), $sAttCode))
 			{
 				throw new Exception("Unknown attribute ".get_class($oObjectToWrite)."::".$sAttCode);
@@ -329,15 +330,15 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			break;
 
 		case 'set':
-			$sAttCode = $aParams[0];
-			$sRawValue = $aParams[1];
+			$sAttCode = trim($aParams[0]);
+			$sRawValue = trim($aParams[1]);
 			$aContext = $oObjectToRead->ToArgs('this');
 			$sValue = MetaModel::ApplyParams($sRawValue, $aContext);
 			$this->SetAtt($oObjectToWrite, $sAttCode, $sValue);
 			break;
 
 		case 'append':
-			$sAttCode = $aParams[0];
+			$sAttCode = trim($aParams[0]);
 			$sRawAddendum = $aParams[1];
 			$aContext = $oObjectToRead->ToArgs('this');
 			$sAddendum = MetaModel::ApplyParams($sRawAddendum, $aContext);
@@ -345,11 +346,11 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			break;
 		
 		case 'add_to_list':
-			$sSourceKeyAttCode = $aParams[0];
-			$sTargetListAttCode = $aParams[1]; // indirect !!!
+			$sSourceKeyAttCode = trim($aParams[0]);
+			$sTargetListAttCode = trim($aParams[1]); // indirect !!!
 			if (isset($aParams[2]) && isset($aParams[3]))
 			{
-				$sRoleAttCode = $aParams[2];
+				$sRoleAttCode = trim($aParams[2]);
 				$sRoleValue = $aParams[3];
 			}
 
