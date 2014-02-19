@@ -28,6 +28,14 @@ interface iObjectCopierActionProvider
 class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvider
 {
 	/**
+	 * Helper to log errors
+	 */
+	static public function LogError($iRule, $sMessage)
+	{
+		IssueLog::Error('Module itop-object-copy - invalid rule #'.$iRule.' - '.$sMessage);
+	}
+
+	/**
 	 * Checks the structure and logs errors if issues have been encountered
 	 */
 	public static function IsRuleValid($iRule, $aRuleData)
@@ -35,38 +43,43 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		$bRet = true;
 		if (!isset($aRuleData['source_scope']))
 		{
-			IssueLog::Error('Module itop-object-copy - invalid rule #'.$iRule.' - missing "source_scope"');
+			self::LogError($iRule, 'missing "source_scope"');
 			$bRet = false;
 		}
 		if (!isset($aRuleData['dest_class']))
 		{
-			IssueLog::Error('Module itop-object-copy - invalid rule #'.$iRule.' - missing "dest_class"');
+			self::LogError($iRule, 'missing "dest_class"');
 			$bRet = false;
 		}
 		if (!isset($aRuleData['preset']))
 		{
-			IssueLog::Error('Module itop-object-copy - invalid rule #'.$iRule.' - missing "preset"');
+			self::LogError($iRule, 'missing "preset"');
 			$bRet = false;
 		}
 		if (!isset($aRuleData['retrofit']))
 		{
-			IssueLog::Error('Module itop-object-copy - invalid rule #'.$iRule.' - missing "retrofit"');
+			self::LogError($iRule, 'missing "retrofit"');
 			$bRet = false;
 		}
 		if (!isset($aRuleData['allowed_profiles']))
 		{
-			IssueLog::Error('Module itop-object-copy - invalid rule #'.$iRule.' - missing "allowed_profiles"');
+			self::LogError($iRule, 'missing "allowed_profiles"');
 			$bRet = false;
 		}
 
 		if (!is_array($aRuleData['preset']))
 		{
-			IssueLog::Error('Module itop-object-copy - invalid rule #'.$iRule.' - preset must be an array');
+			self::LogError($iRule, 'preset must be an array');
 			$bRet = false;
 		}
 		if (!is_array($aRuleData['retrofit']))
 		{
-			IssueLog::Error('Module itop-object-copy - invalid rule #'.$iRule.' - retrofit must be an array');
+			self::LogError($iRule, 'retrofit must be an array');
+			$bRet = false;
+		}
+		if (($aRuleData['dest_class'] != '') && !MetaModel::IsValidClass($aRuleData['dest_class']))
+		{
+			self::LogError($iRule, 'dest_class "'.$aRuleData['dest_class'].'" is not a valid class');
 			$bRet = false;
 		}
 		return $bRet;
@@ -126,28 +139,36 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	
 					if ($bAllowed)
 					{
-						$oFilter = DBObjectSearch::FromOQL($aRuleData['source_scope']);
-						if (MetaModel::IsParentClass($oFilter->GetClass(), get_class($oObject)))
+						try
 						{
-							$oFilter->AddCondition('id', $oObject->GetKey(), '=');
-							$oCheckSet = new DBObjectSet($oFilter);
-							if ($oCheckSet->Count() > 0)
+							$oFilter = DBObjectSearch::FromOQL($aRuleData['source_scope']);
+
+							if (MetaModel::IsParentClass($oFilter->GetClass(), get_class($oObject)))
 							{
-								$oAppContext = new ApplicationContext();
-				       		//$sContextForURL = $oAppContext->GetForLink();
-				       		$aParams = $oAppContext->GetAsHash();
-				
-								$aParams['operation'] = 'new';
-								$aParams['rule'] = $iRule;
-								$aParams['source_id'] = $oObject->GetKey();
-								$aParams['source_class'] = get_class($oObject);
-								$aRet[] = new URLPopupMenuItem
-								(
-									'object_copier_'.$iRule,
-									self::FormatMessage($aRuleData, 'menu_label'),
-									utils::GetAbsoluteUrlModulePage('itop-object-copier', 'copy.php', $aParams)
-								);
+								$oFilter->AddCondition('id', $oObject->GetKey(), '=');
+								$oCheckSet = new DBObjectSet($oFilter);
+								if ($oCheckSet->Count() > 0)
+								{
+									$oAppContext = new ApplicationContext();
+					       		//$sContextForURL = $oAppContext->GetForLink();
+					       		$aParams = $oAppContext->GetAsHash();
+					
+									$aParams['operation'] = 'new';
+									$aParams['rule'] = $iRule;
+									$aParams['source_id'] = $oObject->GetKey();
+									$aParams['source_class'] = get_class($oObject);
+									$aRet[] = new URLPopupMenuItem
+									(
+										'object_copier_'.$iRule,
+										self::FormatMessage($aRuleData, 'menu_label'),
+										utils::GetAbsoluteUrlModulePage('itop-object-copier', 'copy.php', $aParams)
+									);
+								}
 							}
+						}
+						catch (OqlException $e)
+						{
+							self::LogError($iRule, "Invalid source_scope '".$aRuleData['source_scope']."' - ".$e->getMessage());
 						}
 					}
 				}
@@ -204,9 +225,15 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 					$sVerb = $aMatches[1];
 					$sParams = $aMatches[2];
 		
-		// NOTE: escaping!!!
-		
+					// the coma is the separator for the parameters
+					// comas can be escaped: \,
+					$sParams = str_replace(array("\\\\", "\\,"), array("__backslash__", "__coma__"), $sParams);
+
 					$aParams = explode(',', $sParams);
+					foreach ($aParams as &$sParam)
+					{
+						$sParam = str_replace(array("__backslash__", "__coma__"), array("\\", ","), $sParam);
+					}
 		
 					if (!array_key_exists($sVerb, $aVerbToProvider))
 					{
@@ -222,7 +249,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			}
 			catch(Exception $e)
 			{
-				throw new Exception('itop-object-copier - Action: '.$sAction.' - '.$e->getMessage());
+				throw new Exception('Action: '.$sAction.' - '.$e->getMessage());
 			}
 		}
 	}
@@ -232,7 +259,10 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		return array('clone', 'clone_scalars', 'copy', 'reset', 'set', 'append', 'add_to_list');
 	}
 
-	protected function GetAttValue($oObject, $sAttCode)
+	/**
+	 * Helper to check the attribute code before attempting to use it, thus generating the most relevant error message
+	 */	 	
+	protected function GetAtt($oObject, $sAttCode)
 	{
 		if ($sAttCode == 'id')
 		{
@@ -240,9 +270,25 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		}
 		else
 		{
+			if (!MetaModel::IsValidAttCode(get_class($oObject), $sAttCode))
+			{
+				throw new Exception("Unknown attribute ".get_class($oObject)."::".$sAttCode);
+			}
 			$ret = $oObject->Get($sAttCode);
 		}
 		return $ret;
+	}
+
+	/**
+	 * Helper to check the attribute code before attempting to use it, thus generating the most relevant error message
+	 */	 	
+	protected function SetAtt($oObject, $sAttCode, $value)
+	{
+		if (!MetaModel::IsValidAttCode(get_class($oObject), $sAttCode))
+		{
+			throw new Exception("Unknown attribute ".get_class($oObject)."::".$sAttCode);
+		}
+		$oObject->Set($sAttCode, $value);
 	}
 
 	public function ExecAction($sVerb, $aParams, $oObjectToRead, $oObjectToWrite)
@@ -252,10 +298,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		case 'clone':
 			foreach($aParams as $sAttCode)
 			{
-				if (MetaModel::IsValidAttCode(get_class($oObjectToWrite), $sAttCode))
-				{
-					$oObjectToWrite->Set($sAttCode, $this->GetAttValue($oObjectToRead, $sAttCode));
-				}
+				$this->SetAtt($oObjectToWrite, $sAttCode, $this->GetAtt($oObjectToRead, $sAttCode));
 			}
 			break;
 
@@ -264,7 +307,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			{
 				if ($oAttDef->IsScalar())
 				{
-					$oObjectToWrite->Set($sAttCode, $this->GetAttValue($oObjectToRead, $sAttCode));
+					$this->SetAtt($oObjectToWrite, $sAttCode, $this->GetAtt($oObjectToRead, $sAttCode));
 				}
 			}
 			break;
@@ -272,13 +315,17 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		case 'copy':
 			$sSourceAttCode = $aParams[0];
 			$sDestAttCode = $aParams[1];
-			$oObjectToWrite->Set($sDestAttCode, $this->GetAttValue($oObjectToRead, $sSourceAttCode));
+			$this->SetAtt($oObjectToWrite, $sDestAttCode, $this->GetAtt($oObjectToRead, $sSourceAttCode));
 			break;
 
 		case 'reset':
 			$sAttCode = $aParams[0];
+			if (!MetaModel::IsValidAttCode(get_class($oObjectToWrite), $sAttCode))
+			{
+				throw new Exception("Unknown attribute ".get_class($oObjectToWrite)."::".$sAttCode);
+			}
 			$oAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sAttCode);
-			$oObjectToWrite->Set($sAttCode, $oAttDef->GetDefaultValue());
+			$this->SetAtt($oObjectToWrite, $sAttCode, $oAttDef->GetDefaultValue());
 			break;
 
 		case 'set':
@@ -286,7 +333,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			$sRawValue = $aParams[1];
 			$aContext = $oObjectToRead->ToArgs('this');
 			$sValue = MetaModel::ApplyParams($sRawValue, $aContext);
-			$oObjectToWrite->Set($sAttCode, $sValue);
+			$this->SetAtt($oObjectToWrite, $sAttCode, $sValue);
 			break;
 
 		case 'append':
@@ -294,19 +341,19 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			$sRawAddendum = $aParams[1];
 			$aContext = $oObjectToRead->ToArgs('this');
 			$sAddendum = MetaModel::ApplyParams($sRawAddendum, $aContext);
-			$oObjectToWrite->Set($sAttCode, $this->GetAttValue($oObjectToWrite, $sAttCode).$sAddendum);
+			$this->SetAtt($oObjectToWrite, $sAttCode, $this->GetAtt($oObjectToWrite, $sAttCode).$sAddendum);
 			break;
 		
 		case 'add_to_list':
 			$sSourceKeyAttCode = $aParams[0];
 			$sTargetListAttCode = $aParams[1]; // indirect !!!
-			if (isset($aParams[2]))
+			if (isset($aParams[2]) && isset($aParams[3]))
 			{
 				$sRoleAttCode = $aParams[2];
 				$sRoleValue = $aParams[3];
 			}
 
-			$iObjKey = $this->GetAttValue($oObjectToRead, $sSourceKeyAttCode);
+			$iObjKey = $this->GetAtt($oObjectToRead, $sSourceKeyAttCode);
 			if ($iObjKey > 0)
 			{
 				$oLinkSet = $oObjectToWrite->Get($sTargetListAttCode);
@@ -316,10 +363,10 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 				$oLnk->Set($oListAttDef->GetExtKeyToRemote(), $iObjKey);
 				if (isset($sRoleAttCode))
 				{
-					$oLnk->Set($sRoleAttCode, $sRoleValue);
+					$this->SetAtt($oLnk, $sRoleAttCode, $sRoleValue);
 				}
 				$oLinkSet->AddObject($oLnk);
-				$oObjectToWrite->Set($sTargetListAttCode, $oLinkSet);
+				$this->SetAtt($oObjectToWrite, $sTargetListAttCode, $oLinkSet);
 			}
 			break;
 		

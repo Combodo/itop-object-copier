@@ -217,7 +217,16 @@ try
 				$oObjToClone->UpdateObjectFromArg('default');
 
 				// Specific to itop-object-copier
-				iTopObjectCopier::PrepareObject($aRuleData, $oObjToClone, $oSourceObject);
+				try
+				{
+					iTopObjectCopier::PrepareObject($aRuleData, $oObjToClone, $oSourceObject);
+				}
+				catch (Exception $e)
+				{
+					iTopObjectCopier::LogError($iRule, 'preset - '.$e->getMessage());
+					$sMessage = Dict::Format('object-copier:error:preset', $e->getMessage());
+					$oP->add("<div class=\"header_message message_error\">$sMessage</div>\n");
+				}
 
 				cmdbAbstractObject::DisplayCreationForm($oP, $sRealClass, $oObjToClone, array(), $aCopyArgs);
 				$oP->add("</div>\n");
@@ -333,13 +342,21 @@ try
 
 				// Specific to itop-object-copier
 				// Note: must be done when the id is known
-				$oSourceObject = MetaModel::GetObject($sSourceClass, $iSourceId);
-				iTopObjectCopier::RetrofitOnSourceObject($aRuleData, $oObj, $oSourceObject);
-				$oSourceObject->DBUpdate();
+				try
+				{
+					$oSourceObject = MetaModel::GetObject($sSourceClass, $iSourceId);
+					iTopObjectCopier::RetrofitOnSourceObject($aRuleData, $oObj, $oSourceObject);
+					$oSourceObject->DBUpdate();
 
-				// Specific to itop-object-copier
-				$sMessage = iTopObjectCopier::FormatMessage($aRuleData, 'report_label', $oSourceObject);
-				cmdbAbstractObject::SetSessionMessage(get_class($oObj), $oObj->GetKey(), 'object-copier', $sMessage, 'info', 0, true /* must not exist */);
+					$sMessage = iTopObjectCopier::FormatMessage($aRuleData, 'report_label', $oSourceObject);
+					cmdbAbstractObject::SetSessionMessage(get_class($oObj), $oObj->GetKey(), 'object-copier', $sMessage, 'info', 0, true /* must not exist */);
+				}
+				catch (Exception $e)
+				{
+					iTopObjectCopier::LogError($iRule, 'retrofit - '.$e->getMessage());
+					$sMessage = Dict::Format('object-copier:error:retrofit', $e->getMessage());
+					cmdbAbstractObject::SetSessionMessage(get_class($oObj), $oObj->GetKey(), 'object-copier', $sMessage, 'error', 0, true /* must not exist */);
+				}
 
 				utils::RemoveTransaction($sTransactionId);
 				$oP->set_title(Dict::S('UI:PageTitle:ObjectCreated'));
