@@ -61,28 +61,51 @@ SetupWebPage::AddModule(
 					'retrofit' => array( // Series of actions to retrofit some information from the created object to the source object
 					),
 				),
-				array(
-					'source_scope' => 'SELECT UserRequest',
-					'allowed_profiles' => '', // Empty => anybody
-					'menu_label' => 'Clone...', // Label or dictionary entry
-					'form_label' => 'Cloning %1$s', // Label or dictionary entry
-					'report_label' => 'Cloned from %1$s', // Label or dictionary entry
-					'dest_class' => 'UserRequest', // Class of the new object
-					'preset' => array( // Series of actions to preset the object in the creation form
-						'clone_scalars()',
-						'add_to_list(caller_id,contacts_list,role,Caller for the parent)',
-						'copy(id,parent_request_id)'
-						//'clone(name,city)',
-						//'reset(name)',
-						//'copy(name,address)',
-						//'copy(name,country)',
-						//'append(address, et on y boit du whisky)',
-						//'set(name,<mettez ici le nom>)',
-					),
-					'retrofit' => array(// Series of actions to retrofit some information from the created object to the source object
-						//'copy(id, parent_request_id)'
-					),
+				 array (
+				    'source_scope' => "SELECT UserRequest WHERE status NOT IN ('resolved','closed')",
+				    'allowed_profiles' => 'Support Agent,Administrator',
+				    'menu_label' => 'Create child request', // Label or dictionary entry
+				    'form_label' => 'Create child request from  %1$s', // Label or dictionary entry
+				    'report_label' => 'Created from %1$s', // Label or dictionary entry
+				    'dest_class' => 'UserRequest', // Class of the new object
+				    'preset' => array ( // Series of actions to preset the object in the creation form
+				      0 => 'clone(caller_id,org_id,contacts_list,functionalcis_list)',
+				      2 => 'copy(id,parent_request_id)',
+				    ),
+				    'retrofit' => 
+				    array (
+				    ),
 				),
+				array (
+				    'source_scope' => 'SELECT Person',
+				    'allowed_profiles' => 'Support Agent,Administrator',
+		                    'menu_label' => 'Create a user request',
+		                    'form_label' => 'Create a user request from  %1$s',
+		                    'report_label' => 'Created from %1$s',
+				    'dest_class' => 'UserRequest',
+				    'preset' => 
+				    array (
+				      0 => 'copy(id,caller_id)',
+				    ),
+				    'retrofit' => 
+				    array (
+				    ),
+				 ),
+		                 array (
+		                    'source_scope' => 'SELECT FunctionalCI',
+		                    'allowed_profiles' => 'Support Agent,Administrator',
+		                    'menu_label' => 'Create a user request',
+		                    'form_label' => 'Create a user request from  %1$s',
+		                    'report_label' => 'Created from %1$s',
+		                    'dest_class' => 'UserRequest',
+		                    'preset' =>
+		                    array (
+		                      0 => 'add_to_list(id,functionalcis_list,impact,Impacted CI)',
+		                    ),
+		                    'retrofit' =>
+		                    array (
+		                    ),
+		                ),
 				array(
 					'source_scope' => 'SELECT FunctionalCI',
 					'allowed_profiles' => 'Administrator,Configuration Manager',
