@@ -64,8 +64,8 @@ SetupWebPage::AddModule(
 				array(
 					'source_scope' => "SELECT UserRequest WHERE status NOT IN ('resolved','closed')",
 					'allowed_profiles' => 'Support Agent,Administrator',
-					'menu_label' => 'Create child request', // Label or dictionary entry
-					'form_label' => 'Create child request from  %1$s', // Label or dictionary entry
+					'menu_label' => 'Create a child request...', // Label or dictionary entry
+					'form_label' => 'Create a child request from  %1$s', // Label or dictionary entry
 					'report_label' => 'Created from %1$s', // Label or dictionary entry
 					'dest_class' => 'UserRequest', // Class of the new object
 					'preset' => array ( // Series of actions to preset the object in the creation form
@@ -78,11 +78,12 @@ SetupWebPage::AddModule(
 				array(
 					'source_scope' => 'SELECT Person',
 					'allowed_profiles' => 'Support Agent,Administrator',
-					'menu_label' => 'Create a user request',
+					'menu_label' => 'Create a user request...',
 					'form_label' => 'Create a user request from  %1$s',
 					'report_label' => 'Created from %1$s',
 					'dest_class' => 'UserRequest',
 					'preset' => array(
+						'copy(org_id,org_id)',
 						'copy(id,caller_id)',
 					),
 					'retrofit' => array( // Series of actions to retrofit some information from the created object to the source object
@@ -91,11 +92,12 @@ SetupWebPage::AddModule(
 				array(
 					'source_scope' => 'SELECT FunctionalCI',
 					'allowed_profiles' => 'Support Agent,Administrator',
-					'menu_label' => 'Create a user request',
+					'menu_label' => 'Create a user request...',
 					'form_label' => 'Create a user request from  %1$s',
 					'report_label' => 'Created from %1$s',
 					'dest_class' => 'UserRequest',
 					'preset' => array(
+						'copy(org_id,org_id)',
 						'add_to_list(id,functionalcis_list,impact,Impacted CI)',
 					),
 					'retrofit' => array( // Series of actions to retrofit some information from the created object to the source object
