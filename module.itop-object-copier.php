@@ -61,51 +61,46 @@ SetupWebPage::AddModule(
 					'retrofit' => array( // Series of actions to retrofit some information from the created object to the source object
 					),
 				),
-				 array (
-				    'source_scope' => "SELECT UserRequest WHERE status NOT IN ('resolved','closed')",
-				    'allowed_profiles' => 'Support Agent,Administrator',
-				    'menu_label' => 'Create child request', // Label or dictionary entry
-				    'form_label' => 'Create child request from  %1$s', // Label or dictionary entry
-				    'report_label' => 'Created from %1$s', // Label or dictionary entry
-				    'dest_class' => 'UserRequest', // Class of the new object
-				    'preset' => array ( // Series of actions to preset the object in the creation form
-				      0 => 'clone(caller_id,org_id,contacts_list,functionalcis_list)',
-				      2 => 'copy(id,parent_request_id)',
-				    ),
-				    'retrofit' => 
-				    array (
-				    ),
+				array(
+					'source_scope' => "SELECT UserRequest WHERE status NOT IN ('resolved','closed')",
+					'allowed_profiles' => 'Support Agent,Administrator',
+					'menu_label' => 'Create child request', // Label or dictionary entry
+					'form_label' => 'Create child request from  %1$s', // Label or dictionary entry
+					'report_label' => 'Created from %1$s', // Label or dictionary entry
+					'dest_class' => 'UserRequest', // Class of the new object
+					'preset' => array ( // Series of actions to preset the object in the creation form
+						'clone(caller_id,org_id,contacts_list,functionalcis_list)',
+						'copy(id,parent_request_id)',
+					),
+					'retrofit' => array( // Series of actions to retrofit some information from the created object to the source object
+					),
 				),
-				array (
-				    'source_scope' => 'SELECT Person',
-				    'allowed_profiles' => 'Support Agent,Administrator',
-		                    'menu_label' => 'Create a user request',
-		                    'form_label' => 'Create a user request from  %1$s',
-		                    'report_label' => 'Created from %1$s',
-				    'dest_class' => 'UserRequest',
-				    'preset' => 
-				    array (
-				      0 => 'copy(id,caller_id)',
-				    ),
-				    'retrofit' => 
-				    array (
-				    ),
-				 ),
-		                 array (
-		                    'source_scope' => 'SELECT FunctionalCI',
-		                    'allowed_profiles' => 'Support Agent,Administrator',
-		                    'menu_label' => 'Create a user request',
-		                    'form_label' => 'Create a user request from  %1$s',
-		                    'report_label' => 'Created from %1$s',
-		                    'dest_class' => 'UserRequest',
-		                    'preset' =>
-		                    array (
-		                      0 => 'add_to_list(id,functionalcis_list,impact,Impacted CI)',
-		                    ),
-		                    'retrofit' =>
-		                    array (
-		                    ),
-		                ),
+				array(
+					'source_scope' => 'SELECT Person',
+					'allowed_profiles' => 'Support Agent,Administrator',
+					'menu_label' => 'Create a user request',
+					'form_label' => 'Create a user request from  %1$s',
+					'report_label' => 'Created from %1$s',
+					'dest_class' => 'UserRequest',
+					'preset' => array(
+						'copy(id,caller_id)',
+					),
+					'retrofit' => array( // Series of actions to retrofit some information from the created object to the source object
+					),
+				),
+				array(
+					'source_scope' => 'SELECT FunctionalCI',
+					'allowed_profiles' => 'Support Agent,Administrator',
+					'menu_label' => 'Create a user request',
+					'form_label' => 'Create a user request from  %1$s',
+					'report_label' => 'Created from %1$s',
+					'dest_class' => 'UserRequest',
+					'preset' => array(
+						'add_to_list(id,functionalcis_list,impact,Impacted CI)',
+					),
+					'retrofit' => array( // Series of actions to retrofit some information from the created object to the source object
+					),
+				),
 				array(
 					'source_scope' => 'SELECT FunctionalCI',
 					'allowed_profiles' => 'Administrator,Configuration Manager',
