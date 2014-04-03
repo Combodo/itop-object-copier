@@ -5,7 +5,7 @@
 
 SetupWebPage::AddModule(
 	__FILE__, // Path to the current file, all other file names are relative to the directory containing this file
-	'itop-object-copier/1.0.0',
+	'itop-object-copier/1.0.1',
 	array(
 		// Identification
 		//

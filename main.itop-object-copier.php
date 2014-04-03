@@ -291,6 +291,63 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		$oObject->Set($sAttCode, $value);
 	}
 
+	/**
+	 * Clone an object in memory (not the same as DBObject::Clone!)
+	 * It will be used to clone link sets
+	 */
+	public function CloneObject($oSourceObject)
+	{
+		$sClass = get_class($oSourceObject);
+		$oClone = MetaModel::NewObject($sClass);
+		foreach(MetaModel::ListAttributeDefs($sClass) as $sAttCode => $oAttDef)
+		{
+			// As of now, ignore other attribute (do not attempt to recurse!)
+			if ($oAttDef->IsScalar())
+			{
+				$this->SetAtt($oClone, $sAttCode, $this->GetAtt($oSourceObject, $sAttCode));
+			}
+		}
+		return $oClone;
+	}	
+
+	/**
+	 * Helper to copy an attribute between two objects (in memory)
+	 * Used for several verbs like clone() and copy()	 	
+	 */
+	public function CopyAttribute($oSourceObject, $sSourceAttCode, $oDestObject, $sDestAttCode)
+	{
+		if ($sSourceAttCode == 'id')
+		{
+			$oSourceAttDef = null;
+		}
+		else
+		{
+			$oSourceAttDef = MetaModel::GetAttributeDef(get_class($oSourceObject), $sSourceAttCode);
+		}
+		if (is_object($oSourceAttDef) && $oSourceAttDef->IsLinkSet())
+		{
+			// The copy requires that we create a new object set (the semantic of DBObject::Set is unclear about link sets)
+			$oDestSet = DBObjectSet::FromScratch($oSourceAttDef->GetLinkedClass());
+			$oSourceSet = $this->GetAtt($oSourceObject, $sSourceAttCode);
+			$oSourceSet->Rewind();
+			while ($oSourceLink = $oSourceSet->Fetch())
+			{
+				$oDestLink = $this->CloneObject($oSourceLink);
+				// Not necessary
+				// $oDestLink->Set($oSourceAttDef->GetExtKeyToMe(), 0);
+				$oDestSet->AddObject($oDestLink);
+			}
+			$this->SetAtt($oDestObject, $sDestAttCode, $oDestSet);
+		}
+		else
+		{
+			$this->SetAtt($oDestObject, $sDestAttCode, $this->GetAtt($oSourceObject, $sSourceAttCode));
+		}
+	}
+
+	/**
+	 * Handles the various actions (see the interface iObjectCopierActionProvider)	
+	 */	
 	public function ExecAction($sVerb, $aParams, $oObjectToRead, $oObjectToWrite)
 	{
 		switch($sVerb)
@@ -299,7 +356,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			foreach($aParams as $sAttCode)
 			{
 				$sAttCode = trim($sAttCode);
-				$this->SetAtt($oObjectToWrite, $sAttCode, $this->GetAtt($oObjectToRead, $sAttCode));
+				$this->CopyAttribute($oObjectToRead, $sAttCode, $oObjectToWrite, $sAttCode);
 			}
 			break;
 
@@ -308,7 +365,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			{
 				if ($oAttDef->IsScalar())
 				{
-					$this->SetAtt($oObjectToWrite, $sAttCode, $this->GetAtt($oObjectToRead, $sAttCode));
+					$this->CopyAttribute($oObjectToRead, $sAttCode, $oObjectToWrite, $sAttCode);
 				}
 			}
 			break;
@@ -316,7 +373,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		case 'copy':
 			$sSourceAttCode = trim($aParams[0]);
 			$sDestAttCode = trim($aParams[1]);
-			$this->SetAtt($oObjectToWrite, $sDestAttCode, $this->GetAtt($oObjectToRead, $sSourceAttCode));
+			$this->CopyAttribute($oObjectToRead, $sSourceAttCode, $oObjectToWrite, $sDestAttCode);
 			break;
 
 		case 'reset':
