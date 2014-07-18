@@ -390,6 +390,8 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			$sAttCode = trim($aParams[0]);
 			$sRawValue = trim($aParams[1]);
 			$aContext = $oObjectToRead->ToArgs('this');
+			$aContext['current_contact_id'] = UserRights::GetContactId();
+			$aContext['current_contact_friendlyname'] = UserRights::GetUserFriendlyName();
 			$sValue = MetaModel::ApplyParams($sRawValue, $aContext);
 			$this->SetAtt($oObjectToWrite, $sAttCode, $sValue);
 			break;
@@ -398,6 +400,8 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			$sAttCode = trim($aParams[0]);
 			$sRawAddendum = $aParams[1];
 			$aContext = $oObjectToRead->ToArgs('this');
+			$aContext['current_contact_id'] = UserRights::GetContactId();
+			$aContext['current_contact_friendlyname'] = UserRights::GetUserFriendlyName();
 			$sAddendum = MetaModel::ApplyParams($sRawAddendum, $aContext);
 			$this->SetAtt($oObjectToWrite, $sAttCode, $this->GetAtt($oObjectToWrite, $sAttCode).$sAddendum);
 			break;

@@ -1,5 +1,5 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Object copy
+// Object copier
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 See also documentation https://wiki.combodo.com/doku.php?id=extensions:itop-object-copier
@@ -46,7 +46,7 @@ Available actions
  * clone(att1,att2,...): clone the given attributes
  * reset(att1): reset the attribute to its default value
  * copy(attRead,attWrite): copy an attribute ('id' can be used here)
- * append(att,string): appends a literal to the attribute, placeholders are available (e.g. $this->name$ or $current_contact_id$)
+ * append(att,string): appends a literal to the attribute, placeholders are available (e.g. $this->name$, $current_contact_id$ or $current_contact_friendlyname$)
  * set(att,value): sets a value, placeholders are available (e.g. $this->name$ or $current_contact_id$)
  * add_to_list(attRead,attWrite,attLink,value): attRead is an external key on the read object, attWrite is a N-N link set on the written object, attLink is an attribute on the link class that will be set to <value>. 
 
