@@ -5,7 +5,7 @@
 
 SetupWebPage::AddModule(
 	__FILE__, // Path to the current file, all other file names are relative to the directory containing this file
-	'itop-object-copier/1.0.2',
+	'itop-object-copier/1.0.3',
 	array(
 		// Identification
 		//
@@ -65,8 +65,11 @@ SetupWebPage::AddModule(
 					'source_scope' => "SELECT UserRequest WHERE status NOT IN ('resolved','closed')",
 					'allowed_profiles' => 'Support Agent,Administrator',
 					'menu_label' => 'Create a child request...', // Label or dictionary entry
-					'form_label' => 'Create a child request from  %1$s', // Label or dictionary entry
+					'menu_label/FR FR' => 'Créer une demande fille...', // Label
+					'form_label' => 'Create a child request from %1$s', // Label or dictionary entry
+					'form_label/FR FR' => 'Créer une demande fille depuis %1$s', // Label
 					'report_label' => 'Created from %1$s', // Label or dictionary entry
+					'report_label/FR FR' => 'Créée depuis %1$s', // Label
 					'dest_class' => 'UserRequest', // Class of the new object
 					'preset' => array ( // Series of actions to preset the object in the creation form
 						'clone(caller_id,org_id,contacts_list,functionalcis_list)',
@@ -79,8 +82,11 @@ SetupWebPage::AddModule(
 					'source_scope' => 'SELECT Person',
 					'allowed_profiles' => 'Support Agent,Administrator',
 					'menu_label' => 'Create a user request...',
-					'form_label' => 'Create a user request from  %1$s',
+					'menu_label/FR FR' => 'Créer une demande utilisateur...',
+					'form_label' => 'Create a user request from %1$s',
+					'form_label/FR FR' => 'Créer une demande utilisateur pour %1$s',
 					'report_label' => 'Created from %1$s',
+					'report_label/FR FR' => 'Créée depuis %1$s',
 					'dest_class' => 'UserRequest',
 					'preset' => array(
 						'copy(org_id,org_id)',
@@ -93,8 +99,11 @@ SetupWebPage::AddModule(
 					'source_scope' => 'SELECT FunctionalCI',
 					'allowed_profiles' => 'Support Agent,Administrator',
 					'menu_label' => 'Create a user request...',
+					'menu_label/FR FR' => 'Créer une demande utilisateur...',
 					'form_label' => 'Create a user request from  %1$s',
+					'form_label/FR FR' => 'Créer une demande utilisateur pour %1$s',
 					'report_label' => 'Created from %1$s',
+					'report_label/FR FR' => 'Créée depuis %1$s',
 					'dest_class' => 'UserRequest',
 					'preset' => array(
 						'copy(org_id,org_id)',
