@@ -193,10 +193,17 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		self::ExecActions($aRuleData['retrofit'], $oSavedObject, $oSourceObject);
 	}
 
+	// Note: not passed as a new parameter so as to preserve the existing API
+	protected static $aContextObjects = array();
+	public static function AddExecContextObject($oObject, $sAlias)
+	{
+		self::$aContextObjects[$sAlias] = $oObject;
+	}
+
 	/**
 	 * Preset the object to create or retrofit some values...	
 	 */	
-	protected static function ExecActions($aActions, $oObjectToRead, $oObjectToWrite)
+	public static function ExecActions($aActions, $oObjectToRead, $oObjectToWrite)
 	{
 		static $aVerbToProvider = array();
 		if (count($aVerbToProvider) == 0)
@@ -256,7 +263,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 	public function EnumVerbs()
 	{
-		return array('clone', 'clone_scalars', 'copy', 'reset', 'set', 'append', 'add_to_list');
+		return array('clone', 'clone_scalars', 'copy', 'reset', 'set', 'append', 'add_to_list', 'apply_stimulus');
 	}
 
 	/**
@@ -390,8 +397,14 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			$sAttCode = trim($aParams[0]);
 			$sRawValue = trim($aParams[1]);
 			$aContext = $oObjectToRead->ToArgs('this');
+			foreach (self::$aContextObjects as $sAlias => $oObject)
+			{
+				$aContext = array_merge($aContext, $oObject->ToArgs($sAlias));
+			}
 			$aContext['current_contact_id'] = UserRights::GetContactId();
 			$aContext['current_contact_friendlyname'] = UserRights::GetUserFriendlyName();
+			$aContext['current_date'] = date('Y-m-d');
+			$aContext['current_time'] = date('H:i:s');
 			$sValue = MetaModel::ApplyParams($sRawValue, $aContext);
 			$this->SetAtt($oObjectToWrite, $sAttCode, $sValue);
 			break;
@@ -432,6 +445,11 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			}
 			break;
 		
+		case 'apply_stimulus':
+			$sStimulus = trim($aParams[0]);
+			$oObjectToWrite->ApplyStimulus($sStimulus);
+			break;
+
 		default:
 			throw new Exception("Invalid verb");
 		}

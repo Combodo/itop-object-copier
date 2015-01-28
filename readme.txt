@@ -46,9 +46,10 @@ Available actions
  * clone(att1,att2,...): clone the given attributes
  * reset(att1): reset the attribute to its default value
  * copy(attRead,attWrite): copy an attribute ('id' can be used here)
- * append(att,string): appends a literal to the attribute, placeholders are available (e.g. $this->name$, $current_contact_id$ or $current_contact_friendlyname$)
+ * append(att,string): appends a literal to the attribute, placeholders are available (e.g. $this->name$, $current_contact_id$, $current_contact_friendlyname$, $current_date$ or $current_time$)
  * set(att,value): sets a value, placeholders are available (e.g. $this->name$ or $current_contact_id$)
  * add_to_list(attRead,attWrite,attLink,value): attRead is an external key on the read object, attWrite is a N-N link set on the written object, attLink is an attribute on the link class that will be set to <value>. 
+ * apply_stimulus(stimulusCode): applies a stimulus and saves the object (which will be saved again later so that you can execute several sequences of set + apply stimulus)
 
 Notes about strings:
 - as the separator is the coma, you will have to escape comas within the action argument. Example: "append(description,blah\,blah)" will append the string "blah,blah" to the attribute description.
