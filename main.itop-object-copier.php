@@ -263,7 +263,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 	public function EnumVerbs()
 	{
-		return array('clone', 'clone_scalars', 'copy', 'reset', 'set', 'append', 'add_to_list', 'apply_stimulus');
+		return array('clone', 'clone_scalars', 'copy', 'reset', 'set', 'append', 'add_to_list', 'apply_stimulus', 'call_method');
 	}
 
 	/**
@@ -448,6 +448,16 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		case 'apply_stimulus':
 			$sStimulus = trim($aParams[0]);
 			$oObjectToWrite->ApplyStimulus($sStimulus);
+			break;
+
+		case 'call_method':
+			$sMethod = trim($aParams[0]);
+			$aCallSpec = array($oObjectToWrite, $sMethod);
+			if (!is_callable($aCallSpec))
+			{
+				throw new Exception("Unknown method ".get_class($oObjectToWrite)."::".$sMethod.'()');
+			}
+			call_user_func($aCallSpec, $oObjectToRead);
 			break;
 
 		default:
