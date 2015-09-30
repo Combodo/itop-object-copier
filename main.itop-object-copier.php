@@ -263,7 +263,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 	public function EnumVerbs()
 	{
-		return array('clone', 'clone_scalars', 'copy', 'reset', 'set', 'append', 'add_to_list', 'apply_stimulus', 'call_method');
+		return array('clone', 'clone_scalars', 'copy', 'reset', 'nullify', 'set', 'append', 'add_to_list', 'apply_stimulus', 'call_method');
 	}
 
 	/**
@@ -391,6 +391,16 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			}
 			$oAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sAttCode);
 			$this->SetAtt($oObjectToWrite, $sAttCode, $oAttDef->GetDefaultValue());
+			break;
+
+		case 'nullify':
+			$sAttCode = trim($aParams[0]);
+			if (!MetaModel::IsValidAttCode(get_class($oObjectToWrite), $sAttCode))
+			{
+				throw new Exception("Unknown attribute ".get_class($oObjectToWrite)."::".$sAttCode);
+			}
+			$oAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sAttCode);
+			$this->SetAtt($oObjectToWrite, $sAttCode, $oAttDef->GetNullValue());
 			break;
 
 		case 'set':

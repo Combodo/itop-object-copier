@@ -44,7 +44,8 @@ Available actions
 -----------------
  * clone_scalars(): clone all scalar attributes
  * clone(att1,att2,...): clone the given attributes
- * reset(att1): reset the attribute to its default value
+ * reset(att1): reset the attribute to its default value (date -> now)
+ * nullify(att1): reset the attribute to its null value
  * copy(attRead,attWrite): copy an attribute ('id' can be used here)
  * append(att,string): appends a literal to the attribute, placeholders are available (e.g. $this->name$, $current_contact_id$, $current_contact_friendlyname$, $current_date$ or $current_time$)
  * set(att,value): sets a value, placeholders are available (e.g. $this->name$ or $current_contact_id$)
