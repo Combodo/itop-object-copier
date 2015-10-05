@@ -197,6 +197,7 @@ try
 			$aCopyArgs['rule'] = $iRule;
 			$aCopyArgs['source_id'] = $iSourceId;
 			$aCopyArgs['source_class'] = $sSourceClass;
+			$aCopyArgs['action'] = utils::GetAbsoluteUrlModulePage(basename(__DIR__), basename(__FILE__)); // 'action' must be specified for compatibility with iTop 2.2.0
 
 			if (!empty($sRealClass))
 			{
