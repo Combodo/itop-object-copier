@@ -107,6 +107,11 @@ try
 	$oP = new iTopWebPage(Dict::S('UI:WelcomeToITop'));
 	$oP->SetMessage($sLoginMessage);
 
+	if (method_exists($oP, 'DisableBreadCrumb')) // Preserve compatibility with iTop < 2.3.0
+	{
+		$oP->DisableBreadCrumb();
+	}
+
 	// All the following actions use advanced forms that require more javascript to be loaded
 	switch($operation)
 	{
