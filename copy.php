@@ -1,5 +1,5 @@
 <?php
-// Copyright (C) 2014 Combodo SARL
+// Copyright (C) 2014-2016 Combodo SARL
 //
 //   This file is part of iTop.
 //
@@ -22,7 +22,7 @@
  * - operation=new to show the form to create an object
  * - operation=create to execute the operation  
  *
- * @copyright   Copyright (C) 2014 Combodo SARL
+ * @copyright   Copyright (C) 2014-2016 Combodo SARL
  * @license     http://opensource.org/licenses/AGPL-3.0
  */
 
@@ -232,8 +232,40 @@ try
 				cmdbAbstractObject::DisplayCreationForm($oP, $sRealClass, $oObjToClone, array(), $aCopyArgs);
 				$oP->add("</div>\n");
 
-				// Cancel => Back to details of the object we come from
-				$oP->add_ready_script("$('#form_2 button.cancel').click( function() { BackToDetails('$sSourceClass', $iSourceId, '')} );");
+				$aCurrentValues = array();
+				foreach (MetaModel::ListAttributeDefs(get_class($oObjToClone)) as $sAttCode => $oAttDef)
+				{
+					if (!$oAttDef->IsScalar()) continue;
+					$iFlags = $oObjToClone->GetAttributeFlags($sAttCode);
+					if (($iFlags & OPT_ATT_READONLY) || ($iFlags & OPT_ATT_HIDDEN))
+					{
+						$aCurrentValues[$sAttCode] = $oObjToClone->Get($sAttCode);
+					}
+				}
+				$sCurrentValues = json_encode($aCurrentValues);
+
+				$oP->add_ready_script(
+					<<<EOF
+// Cancel => Back to details of the object we come from
+$('#form_2 button.cancel').click( function() { BackToDetails('$sSourceClass', $iSourceId, '')} );
+
+// Hack: add the hidden (preset) fields into the Wizard Helper data (ajax autocomplete and widget reloads)
+oWizardHelper.ToJSON_original = oWizardHelper.ToJSON;
+oWizardHelper.ToJSON = function(){
+	var oData = this.m_oData;
+	var oFixedData = $sCurrentValues;
+	for (var sAttCode in oFixedData)
+	{
+		if (!oData.m_oCurrentValues.hasOwnProperty(sAttCode))
+		{
+			oData.m_oCurrentValues[sAttCode] = oFixedData[sAttCode];
+		}
+	}
+	console.log(oData);
+	return JSON.stringify(oData);
+};
+EOF
+				);
 			}
 			else
 			{
@@ -299,6 +331,7 @@ try
 		$iRule = utils::ReadParam('rule', -1);
 		$iSourceId = utils::ReadParam('source_id', -1);
 		$sSourceClass = utils::ReadParam('source_class', '');
+		$oSourceObject = MetaModel::GetObject($sSourceClass, $iSourceId);
 		$aRules = MetaModel::GetModuleSetting('itop-object-copier', 'rules', array());
 		if (!isset($aRules[$iRule]))
 		{
@@ -320,6 +353,14 @@ try
 		else
 		{
 			$oObj = MetaModel::NewObject($sClass);
+			try
+			{
+				iTopObjectCopier::PrepareObject($aRuleData, $oObj, $oSourceObject);
+			}
+			catch (Exception $e)
+			{
+				iTopObjectCopier::LogError($iRule, 'preset - '.$e->getMessage());
+			}
 			$sStateAttCode = MetaModel::GetStateAttributeCode($sClass);
 			if (!empty($sStateAttCode))
 			{
