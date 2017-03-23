@@ -1,5 +1,5 @@
 <?php
-// Copyright (C) 2014-2016 Combodo SARL
+// Copyright (C) 2014-2017 Combodo SARL
 //
 //   This file is part of iTop.
 //
@@ -22,7 +22,7 @@
  * - operation=new to show the form to create an object
  * - operation=create to execute the operation  
  *
- * @copyright   Copyright (C) 2014-2016 Combodo SARL
+ * @copyright   Copyright (C) 2014-2017 Combodo SARL
  * @license     http://opensource.org/licenses/AGPL-3.0
  */
 
@@ -301,18 +301,21 @@ EOF
 							{
 								foreach($value2 as $key3 => $value3)
 								{
-									$oP->add("<input type=\"hidden\" name=\"default[$key][$key2][$key3]\" value=\"$value3\">\n");	
+									$sValue = htmlentities($value3, ENT_QUOTES, 'UTF-8');
+									$oP->add("<input type=\"hidden\" name=\"default[$key][$key2][$key3]\" value=\"$sValue\">\n");
 								}
 							}
 							else
 							{
-								$oP->add("<input type=\"hidden\" name=\"default[$key][$key2]\" value=\"$value2\">\n");	
+								$sValue = htmlentities($value2, ENT_QUOTES, 'UTF-8');
+								$oP->add("<input type=\"hidden\" name=\"default[$key][$key2]\" value=\"$sValue\">\n");
 							}
 						}
 					}
 					else
 					{
-						$oP->add("<input type=\"hidden\" name=\"default[$key]\" value=\"$value\">\n");	
+						$sValue = htmlentities($value, ENT_QUOTES, 'UTF-8');
+						$oP->add("<input type=\"hidden\" name=\"default[$key]\" value=\"$sValue\">\n");
 					}
 				}
 				$oP->add('<select name="class">');
