@@ -244,7 +244,15 @@ try
 					$iFlags = $oObjToClone->GetAttributeFlags($sAttCode);
 					if (($iFlags & OPT_ATT_READONLY) || ($iFlags & OPT_ATT_HIDDEN))
 					{
-						$aCurrentValues[$sAttCode] = $oObjToClone->Get($sAttCode);
+						if ($oAttDef instanceof AttributeDateTime)
+						{
+							// Such attributes are parsed on the server side
+							$aCurrentValues[$sAttCode] = $oObjToClone->GetEditValue($sAttCode);
+						}
+						else
+						{
+							$aCurrentValues[$sAttCode] = $oObjToClone->Get($sAttCode);
+						}
 					}
 				}
 				$sCurrentValues = json_encode($aCurrentValues);
@@ -266,7 +274,6 @@ oWizardHelper.ToJSON = function(){
 			oData.m_oCurrentValues[sAttCode] = oFixedData[sAttCode];
 		}
 	}
-	console.log(oData);
 	return JSON.stringify(oData);
 };
 EOF
