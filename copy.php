@@ -370,7 +370,8 @@ EOF
 			$oObj = MetaModel::NewObject($sClass);
 			try
 			{
-				iTopObjectCopier::PrepareObject($aRuleData, $oObj, $oSourceObject);
+				// Do not write attributes that will be updated with posted data (conflict with case logs)
+				iTopObjectCopier::PrepareObject($aRuleData, $oObj, $oSourceObject, true);
 			}
 			catch (Exception $e)
 			{
