@@ -179,9 +179,9 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	/**
 	 * Prepare the destination object for user configuration (not saved yet!)
 	 */	 	
-	public static function PrepareObject($aRuleData, $oDestObject, $oSourceObject, $bSkipEditableFields = false)
+	public static function PrepareObject($aRuleData, $oDestObject, $oSourceObject, $bOnFormSubmit = false)
 	{
-		self::ExecActions($aRuleData['preset'], $oSourceObject, $oDestObject, $bSkipEditableFields);
+		self::ExecActions($aRuleData['preset'], $oSourceObject, $oDestObject, $bOnFormSubmit);
 	}
 
 	/**
@@ -202,7 +202,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	/**
 	 * Preset the object to create or retrofit some values...	
 	 */	
-	public static function ExecActions($aActions, $oObjectToRead, $oObjectToWrite, $bSkipEditableFields = false)
+	public static function ExecActions($aActions, $oObjectToRead, $oObjectToWrite, $bOnFormSubmit = false)
 	{
 		static $aVerbToProvider = array();
 		if (count($aVerbToProvider) == 0)
@@ -246,7 +246,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 						throw new Exception("Unknown verb '$sVerb'");
 					}
 					$oActionProvider = $aVerbToProvider[$sVerb];
-					$oActionProvider->ExecAction($sVerb, $aParams, $oObjectToRead, $oObjectToWrite, $bSkipEditableFields);
+					$oActionProvider->ExecAction($sVerb, $aParams, $oObjectToRead, $oObjectToWrite, $bOnFormSubmit);
 				}
 				else
 				{
@@ -351,33 +351,16 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		}
 	}
 
-	protected static function CanUpdateField($oObjectToWrite, $sAttCode, $bSkipEditableFields)
-	{
-		$bRet = true;
-		if ($bSkipEditableFields)
-		{
-			$bRet = false;
-			$iFlags = $oObjectToWrite->GetAttributeFlags($sAttCode);
-			if (($iFlags & OPT_ATT_READONLY) || ($iFlags & OPT_ATT_HIDDEN))
-			{
-				$bRet = true;
-			}
-		}
-		return $bRet;
-	}
-
 	/**
 	 * Handles the various actions (see the interface iObjectCopierActionProvider)	
 	 */	
-	public function ExecAction($sVerb, $aParams, $oObjectToRead, $oObjectToWrite, $bSkipEditableFields = false)
+	public function ExecAction($sVerb, $aParams, $oObjectToRead, $oObjectToWrite, $bOnFormSubmit = false)
 	{
 		switch($sVerb)
 		{
 		case 'clone':
 			foreach($aParams as $sAttCode)
 			{
-				if (!static::CanUpdateField($oObjectToWrite, $sAttCode, $bSkipEditableFields)) continue;
-
 				$sAttCode = trim($sAttCode);
 				$this->CopyAttribute($oObjectToRead, $sAttCode, $oObjectToWrite, $sAttCode);
 			}
@@ -386,8 +369,6 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		case 'clone_scalars':
 			foreach(MetaModel::ListAttributeDefs(get_class($oObjectToWrite)) as $sAttCode => $oAttDef)
 			{
-				if (!static::CanUpdateField($oObjectToWrite, $sAttCode, $bSkipEditableFields)) continue;
-
 				if ($oAttDef->IsScalar())
 				{
 					$this->CopyAttribute($oObjectToRead, $sAttCode, $oObjectToWrite, $sAttCode);
@@ -398,10 +379,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		case 'copy':
 			$sSourceAttCode = trim($aParams[0]);
 			$sDestAttCode = trim($aParams[1]);
-			if (static::CanUpdateField($oObjectToWrite, $sDestAttCode, $bSkipEditableFields))
-			{
-				$this->CopyAttribute($oObjectToRead, $sSourceAttCode, $oObjectToWrite, $sDestAttCode);
-			}
+			$this->CopyAttribute($oObjectToRead, $sSourceAttCode, $oObjectToWrite, $sDestAttCode);
 			break;
 
 		case 'reset':
@@ -410,11 +388,8 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			{
 				throw new Exception("Unknown attribute ".get_class($oObjectToWrite)."::".$sAttCode);
 			}
-			if (static::CanUpdateField($oObjectToWrite, $sAttCode, $bSkipEditableFields))
-			{
-				$oAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sAttCode);
-				$this->SetAtt($oObjectToWrite, $sAttCode, $oAttDef->GetDefaultValue());
-			}
+			$oAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sAttCode);
+			$this->SetAtt($oObjectToWrite, $sAttCode, $oAttDef->GetDefaultValue());
 			break;
 
 		case 'nullify':
@@ -423,17 +398,17 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			{
 				throw new Exception("Unknown attribute ".get_class($oObjectToWrite)."::".$sAttCode);
 			}
-			if (static::CanUpdateField($oObjectToWrite, $sAttCode, $bSkipEditableFields))
-			{
-				$oAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sAttCode);
-				$this->SetAtt($oObjectToWrite, $sAttCode, $oAttDef->GetNullValue());
-			}
+			$oAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sAttCode);
+			$this->SetAtt($oObjectToWrite, $sAttCode, $oAttDef->GetNullValue());
 			break;
 
 		case 'set':
 			$sAttCode = trim($aParams[0]);
 			$sRawValue = trim($aParams[1]);
-			if (static::CanUpdateField($oObjectToWrite, $sAttCode, $bSkipEditableFields))
+
+			// Do not preset caselog value during form submission
+			$iFlags = $oObjectToWrite->GetAttributeFlags($sAttCode);
+			if (!$bOnFormSubmit || !(($iFlags & OPT_ATT_READONLY) || ($iFlags & OPT_ATT_HIDDEN)))
 			{
 				$aContext = $oObjectToRead->ToArgs('this');
 				foreach (self::$aContextObjects as $sAlias => $oObject)
@@ -452,42 +427,36 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		case 'append':
 			$sAttCode = trim($aParams[0]);
 			$sRawAddendum = $aParams[1];
-			if (static::CanUpdateField($oObjectToWrite, $sAttCode, $bSkipEditableFields))
-			{
-				$aContext = $oObjectToRead->ToArgs('this');
-				$aContext['current_contact_id'] = UserRights::GetContactId();
-				$aContext['current_contact_friendlyname'] = UserRights::GetUserFriendlyName();
-				$sAddendum = MetaModel::ApplyParams($sRawAddendum, $aContext);
-				$this->SetAtt($oObjectToWrite, $sAttCode, $this->GetAtt($oObjectToWrite, $sAttCode).$sAddendum);
-			}
+			$aContext = $oObjectToRead->ToArgs('this');
+			$aContext['current_contact_id'] = UserRights::GetContactId();
+			$aContext['current_contact_friendlyname'] = UserRights::GetUserFriendlyName();
+			$sAddendum = MetaModel::ApplyParams($sRawAddendum, $aContext);
+			$this->SetAtt($oObjectToWrite, $sAttCode, $this->GetAtt($oObjectToWrite, $sAttCode).$sAddendum);
 			break;
 		
 		case 'add_to_list':
 			$sSourceKeyAttCode = trim($aParams[0]);
 			$sTargetListAttCode = trim($aParams[1]); // indirect !!!
-			if (static::CanUpdateField($oObjectToWrite, $sTargetListAttCode, $bSkipEditableFields))
+			if (isset($aParams[2]) && isset($aParams[3]))
 			{
-				if (isset($aParams[2]) && isset($aParams[3]))
-				{
-					$sRoleAttCode = trim($aParams[2]);
-					$sRoleValue = $aParams[3];
-				}
+				$sRoleAttCode = trim($aParams[2]);
+				$sRoleValue = $aParams[3];
+			}
 
-				$iObjKey = $this->GetAtt($oObjectToRead, $sSourceKeyAttCode);
-				if ($iObjKey > 0)
-				{
-					$oLinkSet = $oObjectToWrite->Get($sTargetListAttCode);
+			$iObjKey = $this->GetAtt($oObjectToRead, $sSourceKeyAttCode);
+			if ($iObjKey > 0)
+			{
+				$oLinkSet = $oObjectToWrite->Get($sTargetListAttCode);
 
-					$oListAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sTargetListAttCode);
-					$oLnk = MetaModel::NewObject($oListAttDef->GetLinkedClass());
-					$oLnk->Set($oListAttDef->GetExtKeyToRemote(), $iObjKey);
-					if (isset($sRoleAttCode))
-					{
-						$this->SetAtt($oLnk, $sRoleAttCode, $sRoleValue);
-					}
-					$oLinkSet->AddObject($oLnk);
-					$this->SetAtt($oObjectToWrite, $sTargetListAttCode, $oLinkSet);
+				$oListAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sTargetListAttCode);
+				$oLnk = MetaModel::NewObject($oListAttDef->GetLinkedClass());
+				$oLnk->Set($oListAttDef->GetExtKeyToRemote(), $iObjKey);
+				if (isset($sRoleAttCode))
+				{
+					$this->SetAtt($oLnk, $sRoleAttCode, $sRoleValue);
 				}
+				$oLinkSet->AddObject($oLnk);
+				$this->SetAtt($oObjectToWrite, $sTargetListAttCode, $oLinkSet);
 			}
 			break;
 		
