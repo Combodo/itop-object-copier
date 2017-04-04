@@ -408,7 +408,13 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 			// Do not preset caselog value during form submission
 			$iFlags = $oObjectToWrite->GetAttributeFlags($sAttCode);
-			if (!$bOnFormSubmit || !(($iFlags & OPT_ATT_READONLY) || ($iFlags & OPT_ATT_HIDDEN)))
+			$bUpdate = true;
+			if ($bOnFormSubmit)
+			{
+				// In this case, write only hidden case logs
+				$bUpdate = ($iFlags & OPT_ATT_READONLY) || ($iFlags & OPT_ATT_HIDDEN);
+			}
+			if ($bUpdate)
 			{
 				$aContext = $oObjectToRead->ToArgs('this');
 				foreach (self::$aContextObjects as $sAlias => $oObject)
