@@ -369,8 +369,9 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		case 'clone_scalars':
 			foreach(MetaModel::ListAttributeDefs(get_class($oObjectToWrite)) as $sAttCode => $oAttDef)
 			{
-				if ($oAttDef->IsScalar())
-				{
+			    // Note: Condition would match those from DBObject::Set(), otherwise we might encounter an exception.
+                if ($oAttDef->IsScalar() && $oAttDef->IsWritable())
+                {
 					$this->CopyAttribute($oObjectToRead, $sAttCode, $oObjectToWrite, $sAttCode);
 				}
 			}
