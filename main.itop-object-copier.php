@@ -117,7 +117,14 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			{
 				if (self::IsRuleValid($iRule, $aRuleData))
 				{
-					$bAllowed = false;
+                    // Checking if user can write target class (DM rights, Archive mode on, Access mode restricted, ...)
+                    $sTargetClass = ($aRuleData['dest_class'] === '') ? get_class($oObject) : $aRuleData['dest_class'];
+                    if(!UserRights::IsActionAllowed($sTargetClass, UR_ACTION_CREATE))
+                    {
+                        continue;
+                    }
+
+                    $bAllowed = false;
 					if (!isset($aRuleData['allowed_profiles']) || ($aRuleData['allowed_profiles'] == ''))
 					{
 						$bAllowed = true;
@@ -135,7 +142,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 							}
 						}
 					}
-	
+
 					if ($bAllowed)
 					{
 						try
@@ -151,7 +158,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 									$oAppContext = new ApplicationContext();
 					       		//$sContextForURL = $oAppContext->GetForLink();
 					       		$aParams = $oAppContext->GetAsHash();
-					
+
 									$aParams['operation'] = 'new';
 									$aParams['rule'] = $iRule;
 									$aParams['source_id'] = $oObject->GetKey();
@@ -178,7 +185,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 	/**
 	 * Prepare the destination object for user configuration (not saved yet!)
-	 */	 	
+	 */
 	public static function PrepareObject($aRuleData, $oDestObject, $oSourceObject, $bOnFormSubmit = false)
 	{
 		self::ExecActions($aRuleData['preset'], $oSourceObject, $oDestObject, $bOnFormSubmit);
@@ -186,7 +193,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 	/**
 	 * Retrofit some information on the source object
-	 */	 	
+	 */
 	public static function RetrofitOnSourceObject($aRuleData, $oSavedObject, $oSourceObject)
 	{
 		self::ExecActions($aRuleData['retrofit'], $oSavedObject, $oSourceObject);
@@ -200,8 +207,8 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	}
 
 	/**
-	 * Preset the object to create or retrofit some values...	
-	 */	
+	 * Preset the object to create or retrofit some values...
+	 */
 	public static function ExecActions($aActions, $oObjectToRead, $oObjectToWrite, $bOnFormSubmit = false)
 	{
 		static $aVerbToProvider = array();
@@ -230,7 +237,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 				{
 					$sVerb = trim($aMatches[1]);
 					$sParams = $aMatches[2];
-		
+
 					// the coma is the separator for the parameters
 					// comas can be escaped: \,
 					$sParams = str_replace(array("\\\\", "\\,"), array("__backslash__", "__coma__"), $sParams);
@@ -240,7 +247,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 					{
 						$sParam = str_replace(array("__backslash__", "__coma__"), array("\\", ","), $sParam);
 					}
-		
+
 					if (!array_key_exists($sVerb, $aVerbToProvider))
 					{
 						throw new Exception("Unknown verb '$sVerb'");
@@ -267,7 +274,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 	/**
 	 * Helper to check the attribute code before attempting to use it, thus generating the most relevant error message
-	 */	 	
+	 */
 	protected function GetAtt($oObject, $sAttCode)
 	{
 		if ($sAttCode == 'id')
@@ -287,7 +294,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 	/**
 	 * Helper to check the attribute code before attempting to use it, thus generating the most relevant error message
-	 */	 	
+	 */
 	protected function SetAtt($oObject, $sAttCode, $value)
 	{
 		if (!MetaModel::IsValidAttCode(get_class($oObject), $sAttCode))
@@ -314,11 +321,11 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			}
 		}
 		return $oClone;
-	}	
+	}
 
 	/**
 	 * Helper to copy an attribute between two objects (in memory)
-	 * Used for several verbs like clone() and copy()	 	
+	 * Used for several verbs like clone() and copy()
 	 */
 	public function CopyAttribute($oSourceObject, $sSourceAttCode, $oDestObject, $sDestAttCode)
 	{
@@ -352,8 +359,8 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	}
 
 	/**
-	 * Handles the various actions (see the interface iObjectCopierActionProvider)	
-	 */	
+	 * Handles the various actions (see the interface iObjectCopierActionProvider)
+	 */
 	public function ExecAction($sVerb, $aParams, $oObjectToRead, $oObjectToWrite, $bOnFormSubmit = false)
 	{
 		switch($sVerb)
@@ -440,7 +447,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			$sAddendum = MetaModel::ApplyParams($sRawAddendum, $aContext);
 			$this->SetAtt($oObjectToWrite, $sAttCode, $this->GetAtt($oObjectToWrite, $sAttCode).$sAddendum);
 			break;
-		
+
 		case 'add_to_list':
 			$sSourceKeyAttCode = trim($aParams[0]);
 			$sTargetListAttCode = trim($aParams[1]); // indirect !!!
@@ -466,7 +473,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 				$this->SetAtt($oObjectToWrite, $sTargetListAttCode, $oLinkSet);
 			}
 			break;
-		
+
 		case 'apply_stimulus':
 			$sStimulus = trim($aParams[0]);
 			$oObjectToWrite->ApplyStimulus($sStimulus);
@@ -491,8 +498,8 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	 * Format the labels depending on the rule settings, and defaulting to dictionary entries
 	 * @param aRuleData Rule settings
 	 * @param sMsgCode The code in the rule settings and default dictionary (e.g. menu_label, defaulting to object-copier:menu_label:default)
-	 * @param oSourceObject Optional: the source object	 	 	 
-	 */	 	
+	 * @param oSourceObject Optional: the source object
+	 */
 	public static function FormatMessage($aRuleData, $sMsgCode, $oSourceObject = null)
 	{
 		$sLangCode = Dict::GetUserLanguage();
