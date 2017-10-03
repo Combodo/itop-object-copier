@@ -315,7 +315,8 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		foreach(MetaModel::ListAttributeDefs($sClass) as $sAttCode => $oAttDef)
 		{
 			// As of now, ignore other attribute (do not attempt to recurse!)
-			if ($oAttDef->IsScalar())
+            // Note: Condition should match those from DBObject::Set(), otherwise we might encounter an exception.
+            if ($oAttDef->IsScalar() && $oAttDef->IsWritable())
 			{
 				$this->SetAtt($oClone, $sAttCode, $this->GetAtt($oSourceObject, $sAttCode));
 			}
@@ -337,6 +338,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		{
 			$oSourceAttDef = MetaModel::GetAttributeDef(get_class($oSourceObject), $sSourceAttCode);
 		}
+
 		if (is_object($oSourceAttDef) && $oSourceAttDef->IsLinkSet())
 		{
 			// The copy requires that we create a new object set (the semantic of DBObject::Set is unclear about link sets)
@@ -352,9 +354,10 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			}
 			$this->SetAtt($oDestObject, $sDestAttCode, $oDestSet);
 		}
-		else
+		// Note: Condition should match those from DBObject::Set(), otherwise we might encounter an exception.
+		elseif(!is_object($oSourceAttDef) || $oSourceAttDef->IsWritable())
 		{
-			$this->SetAtt($oDestObject, $sDestAttCode, $this->GetAtt($oSourceObject, $sSourceAttCode));
+		    $this->SetAtt($oDestObject, $sDestAttCode, $this->GetAtt($oSourceObject, $sSourceAttCode));
 		}
 	}
 
@@ -376,7 +379,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		case 'clone_scalars':
 			foreach(MetaModel::ListAttributeDefs(get_class($oObjectToWrite)) as $sAttCode => $oAttDef)
 			{
-			    // Note: Condition would match those from DBObject::Set(), otherwise we might encounter an exception.
+			    // Note: Condition should match those from DBObject::Set(), otherwise we might encounter an exception.
                 if ($oAttDef->IsScalar() && $oAttDef->IsWritable())
                 {
 					$this->CopyAttribute($oObjectToRead, $sAttCode, $oObjectToWrite, $sAttCode);
