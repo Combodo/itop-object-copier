@@ -241,8 +241,9 @@ try
 				foreach (MetaModel::ListAttributeDefs(get_class($oObjToClone)) as $sAttCode => $oAttDef)
 				{
 					if (!$oAttDef->IsScalar()) continue;
+
 					$iFlags = $oObjToClone->GetAttributeFlags($sAttCode);
-					if (($iFlags & OPT_ATT_READONLY) || ($iFlags & OPT_ATT_HIDDEN))
+					if ($oAttDef->IsWritable() && (($iFlags & OPT_ATT_READONLY) || ($iFlags & OPT_ATT_HIDDEN)))
 					{
 						if ($oAttDef instanceof AttributeDateTime)
 						{
