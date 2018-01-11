@@ -269,7 +269,19 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 	public function EnumVerbs()
 	{
-		return array('clone', 'clone_scalars', 'copy', 'reset', 'nullify', 'set', 'append', 'add_to_list', 'apply_stimulus', 'call_method');
+		return array(
+			'clone',
+			'clone_scalars',
+			'copy',
+			'copy_head',
+			'reset',
+			'nullify',
+			'set',
+			'append',
+			'add_to_list',
+			'apply_stimulus',
+			'call_method'
+		);
 	}
 
 	/**
@@ -362,138 +374,167 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	}
 
 	/**
+	 * @param DBObject $oSourceObject
+	 * @param string $sSourceAttCode
+	 * @param DBObject $oDestObject
+	 * @param string $sDestAttCode
+	 *
+	 * @throws \Exception
+	 * @uses \ormCaseLog::GetLatestEntry()
+	 */
+	public function CopyLastCaseLogEntry($oSourceObject, $sSourceAttCode, $oDestObject, $sDestAttCode)
+	{
+		$oSourceCaseLog = $oSourceObject->Get($sSourceAttCode);
+
+		if (!is_a($oSourceCaseLog, 'ormCaseLog'))
+		{
+			throw new Exception("tried to use copy_head verb with '$sSourceAttCode' source attribute, which is not a CaseLog field");
+		}
+
+		$sSourceLastCaseLogEntry = $oSourceCaseLog->GetLatestEntry('html');
+		$this->SetAtt($oDestObject, $sDestAttCode, $sSourceLastCaseLogEntry);
+	}
+
+	/**
 	 * Handles the various actions (see the interface iObjectCopierActionProvider)
 	 */
 	public function ExecAction($sVerb, $aParams, $oObjectToRead, $oObjectToWrite, $bOnFormSubmit = false)
 	{
+		IssueLog::Info("entrée dans ExecAction");
 		switch($sVerb)
 		{
-		case 'clone':
-			foreach($aParams as $sAttCode)
-			{
-				$sAttCode = trim($sAttCode);
-				$this->CopyAttribute($oObjectToRead, $sAttCode, $oObjectToWrite, $sAttCode);
-			}
-			break;
-
-		case 'clone_scalars':
-			foreach(MetaModel::ListAttributeDefs(get_class($oObjectToWrite)) as $sAttCode => $oAttDef)
-			{
-			    // Note: Condition should match those from DBObject::Set(), otherwise we might encounter an exception.
-                if ($oAttDef->IsScalar() && $oAttDef->IsWritable())
-                {
+			case 'clone':
+				foreach ($aParams as $sAttCode)
+				{
+					$sAttCode = trim($sAttCode);
 					$this->CopyAttribute($oObjectToRead, $sAttCode, $oObjectToWrite, $sAttCode);
 				}
-			}
-			break;
+				break;
 
-		case 'copy':
-			$sSourceAttCode = trim($aParams[0]);
-			$sDestAttCode = trim($aParams[1]);
-			$this->CopyAttribute($oObjectToRead, $sSourceAttCode, $oObjectToWrite, $sDestAttCode);
-			break;
-
-		case 'reset':
-			$sAttCode = trim($aParams[0]);
-			if (!MetaModel::IsValidAttCode(get_class($oObjectToWrite), $sAttCode))
-			{
-				throw new Exception("Unknown attribute ".get_class($oObjectToWrite)."::".$sAttCode);
-			}
-			$oAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sAttCode);
-			$this->SetAtt($oObjectToWrite, $sAttCode, $oAttDef->GetDefaultValue());
-			break;
-
-		case 'nullify':
-			$sAttCode = trim($aParams[0]);
-			if (!MetaModel::IsValidAttCode(get_class($oObjectToWrite), $sAttCode))
-			{
-				throw new Exception("Unknown attribute ".get_class($oObjectToWrite)."::".$sAttCode);
-			}
-			$oAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sAttCode);
-			$this->SetAtt($oObjectToWrite, $sAttCode, $oAttDef->GetNullValue());
-			break;
-
-		case 'set':
-			$sAttCode = trim($aParams[0]);
-			$sRawValue = trim($aParams[1]);
-
-			// Do not preset caselog value during form submission
-			$iFlags = $oObjectToWrite->GetAttributeFlags($sAttCode);
-			$bUpdate = true;
-			if ($bOnFormSubmit)
-			{
-				// In this case, write only hidden case logs
-				$bUpdate = ($iFlags & OPT_ATT_READONLY) || ($iFlags & OPT_ATT_HIDDEN);
-			}
-			if ($bUpdate)
-			{
-				$aContext = $oObjectToRead->ToArgs('this');
-				foreach (self::$aContextObjects as $sAlias => $oObject)
+			case 'clone_scalars':
+				foreach (MetaModel::ListAttributeDefs(get_class($oObjectToWrite)) as $sAttCode => $oAttDef)
 				{
-					$aContext = array_merge($aContext, $oObject->ToArgs($sAlias));
+					// Note: Condition should match those from DBObject::Set(), otherwise we might encounter an exception.
+					if ($oAttDef->IsScalar() && $oAttDef->IsWritable())
+					{
+						$this->CopyAttribute($oObjectToRead, $sAttCode, $oObjectToWrite, $sAttCode);
+					}
 				}
+				break;
+
+			case 'copy':
+				$sSourceAttCode = trim($aParams[0]);
+				$sDestAttCode = trim($aParams[1]);
+				$this->CopyAttribute($oObjectToRead, $sSourceAttCode, $oObjectToWrite, $sDestAttCode);
+				break;
+
+			case 'copy_head':
+				$sSourceAttCode = trim($aParams[0]);
+				$sDestAttCode = trim($aParams[1]);
+				$this->CopyLastCaseLogEntry($oObjectToRead, $sSourceAttCode, $oObjectToWrite, $sDestAttCode);
+				break;
+
+			case 'reset':
+				$sAttCode = trim($aParams[0]);
+				if (!MetaModel::IsValidAttCode(get_class($oObjectToWrite), $sAttCode))
+				{
+					throw new Exception("Unknown attribute ".get_class($oObjectToWrite)."::".$sAttCode);
+				}
+				$oAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sAttCode);
+				$this->SetAtt($oObjectToWrite, $sAttCode, $oAttDef->GetDefaultValue());
+				break;
+
+			case 'nullify':
+				$sAttCode = trim($aParams[0]);
+				if (!MetaModel::IsValidAttCode(get_class($oObjectToWrite), $sAttCode))
+				{
+					throw new Exception("Unknown attribute ".get_class($oObjectToWrite)."::".$sAttCode);
+				}
+				$oAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sAttCode);
+				$this->SetAtt($oObjectToWrite, $sAttCode, $oAttDef->GetNullValue());
+				break;
+
+			case 'set':
+				$sAttCode = trim($aParams[0]);
+				$sRawValue = trim($aParams[1]);
+
+				// Do not preset caselog value during form submission
+				$iFlags = $oObjectToWrite->GetAttributeFlags($sAttCode);
+				$bUpdate = true;
+				if ($bOnFormSubmit)
+				{
+					// In this case, write only hidden case logs
+					$bUpdate = ($iFlags & OPT_ATT_READONLY) || ($iFlags & OPT_ATT_HIDDEN);
+				}
+				if ($bUpdate)
+				{
+					$aContext = $oObjectToRead->ToArgs('this');
+					foreach (self::$aContextObjects as $sAlias => $oObject)
+					{
+						$aContext = array_merge($aContext, $oObject->ToArgs($sAlias));
+					}
+					$aContext['current_contact_id'] = UserRights::GetContactId();
+					$aContext['current_contact_friendlyname'] = UserRights::GetUserFriendlyName();
+					$aContext['current_date'] = date('Y-m-d');
+					$aContext['current_time'] = date('H:i:s');
+					$sValue = MetaModel::ApplyParams($sRawValue, $aContext);
+					$this->SetAtt($oObjectToWrite, $sAttCode, $sValue);
+				}
+				break;
+
+			case 'append':
+				$sAttCode = trim($aParams[0]);
+				$sRawAddendum = $aParams[1];
+				$aContext = $oObjectToRead->ToArgs('this');
 				$aContext['current_contact_id'] = UserRights::GetContactId();
 				$aContext['current_contact_friendlyname'] = UserRights::GetUserFriendlyName();
-				$aContext['current_date'] = date('Y-m-d');
-				$aContext['current_time'] = date('H:i:s');
-				$sValue = MetaModel::ApplyParams($sRawValue, $aContext);
-				$this->SetAtt($oObjectToWrite, $sAttCode, $sValue);
-			}
-			break;
+				$sAddendum = MetaModel::ApplyParams($sRawAddendum, $aContext);
+				$this->SetAtt($oObjectToWrite, $sAttCode, $this->GetAtt($oObjectToWrite, $sAttCode).$sAddendum);
+				break;
 
-		case 'append':
-			$sAttCode = trim($aParams[0]);
-			$sRawAddendum = $aParams[1];
-			$aContext = $oObjectToRead->ToArgs('this');
-			$aContext['current_contact_id'] = UserRights::GetContactId();
-			$aContext['current_contact_friendlyname'] = UserRights::GetUserFriendlyName();
-			$sAddendum = MetaModel::ApplyParams($sRawAddendum, $aContext);
-			$this->SetAtt($oObjectToWrite, $sAttCode, $this->GetAtt($oObjectToWrite, $sAttCode).$sAddendum);
-			break;
-
-		case 'add_to_list':
-			$sSourceKeyAttCode = trim($aParams[0]);
-			$sTargetListAttCode = trim($aParams[1]); // indirect !!!
-			if (isset($aParams[2]) && isset($aParams[3]))
-			{
-				$sRoleAttCode = trim($aParams[2]);
-				$sRoleValue = $aParams[3];
-			}
-
-			$iObjKey = $this->GetAtt($oObjectToRead, $sSourceKeyAttCode);
-			if ($iObjKey > 0)
-			{
-				$oLinkSet = $oObjectToWrite->Get($sTargetListAttCode);
-
-				$oListAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sTargetListAttCode);
-				$oLnk = MetaModel::NewObject($oListAttDef->GetLinkedClass());
-				$oLnk->Set($oListAttDef->GetExtKeyToRemote(), $iObjKey);
-				if (isset($sRoleAttCode))
+			case 'add_to_list':
+				$sSourceKeyAttCode = trim($aParams[0]);
+				$sTargetListAttCode = trim($aParams[1]); // indirect !!!
+				if (isset($aParams[2]) && isset($aParams[3]))
 				{
-					$this->SetAtt($oLnk, $sRoleAttCode, $sRoleValue);
+					$sRoleAttCode = trim($aParams[2]);
+					$sRoleValue = $aParams[3];
 				}
-				$oLinkSet->AddObject($oLnk);
-				$this->SetAtt($oObjectToWrite, $sTargetListAttCode, $oLinkSet);
-			}
-			break;
 
-		case 'apply_stimulus':
-			$sStimulus = trim($aParams[0]);
-			$oObjectToWrite->ApplyStimulus($sStimulus);
-			break;
+				$iObjKey = $this->GetAtt($oObjectToRead, $sSourceKeyAttCode);
+				if ($iObjKey > 0)
+				{
+					$oLinkSet = $oObjectToWrite->Get($sTargetListAttCode);
 
-		case 'call_method':
-			$sMethod = trim($aParams[0]);
-			$aCallSpec = array($oObjectToWrite, $sMethod);
-			if (!is_callable($aCallSpec))
-			{
-				throw new Exception("Unknown method ".get_class($oObjectToWrite)."::".$sMethod.'()');
-			}
-			call_user_func($aCallSpec, $oObjectToRead);
-			break;
+					$oListAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sTargetListAttCode);
+					$oLnk = MetaModel::NewObject($oListAttDef->GetLinkedClass());
+					$oLnk->Set($oListAttDef->GetExtKeyToRemote(), $iObjKey);
+					if (isset($sRoleAttCode))
+					{
+						$this->SetAtt($oLnk, $sRoleAttCode, $sRoleValue);
+					}
+					$oLinkSet->AddObject($oLnk);
+					$this->SetAtt($oObjectToWrite, $sTargetListAttCode, $oLinkSet);
+				}
+				break;
 
-		default:
-			throw new Exception("Invalid verb");
+			case 'apply_stimulus':
+				$sStimulus = trim($aParams[0]);
+				$oObjectToWrite->ApplyStimulus($sStimulus);
+				break;
+
+			case 'call_method':
+				$sMethod = trim($aParams[0]);
+				$aCallSpec = array($oObjectToWrite, $sMethod);
+				if (!is_callable($aCallSpec))
+				{
+					throw new Exception("Unknown method ".get_class($oObjectToWrite)."::".$sMethod.'()');
+				}
+				call_user_func($aCallSpec, $oObjectToRead);
+				break;
+
+			default:
+				throw new Exception("Invalid verb");
 		}
 	}
 
