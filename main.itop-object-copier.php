@@ -1,5 +1,5 @@
 <?php
-// Copyright (C) 2014-2017 Combodo SARL
+// Copyright (C) 2014-2018 Combodo SARL
 //
 //   This file is part of iTop.
 //
@@ -28,6 +28,9 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 {
 	/**
 	 * Helper to log errors
+	 *
+	 * @param int $iRule
+	 * @param string $sMessage
 	 */
 	static public function LogError($iRule, $sMessage)
 	{
@@ -36,6 +39,11 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 	/**
 	 * Checks the structure and logs errors if issues have been encountered
+	 *
+	 * @param integer $iRule
+	 * @param string[] $aRuleData
+	 *
+	 * @return bool
 	 */
 	public static function IsRuleValid($iRule, $aRuleData)
 	{
@@ -156,8 +164,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 								if ($oCheckSet->Count() > 0)
 								{
 									$oAppContext = new ApplicationContext();
-					       		//$sContextForURL = $oAppContext->GetForLink();
-					       		$aParams = $oAppContext->GetAsHash();
+									$aParams = $oAppContext->GetAsHash();
 
 									$aParams['operation'] = 'new';
 									$aParams['rule'] = $iRule;
@@ -185,6 +192,13 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 	/**
 	 * Prepare the destination object for user configuration (not saved yet!)
+	 *
+	 * @param string[string[]] $aRuleData
+	 * @param \DBObject $oDestObject
+	 * @param \DBObject $oSourceObject
+	 * @param bool $bOnFormSubmit
+	 *
+	 * @throws \Exception
 	 */
 	public static function PrepareObject($aRuleData, $oDestObject, $oSourceObject, $bOnFormSubmit = false)
 	{
@@ -193,6 +207,12 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 	/**
 	 * Retrofit some information on the source object
+	 *
+	 * @param string[string[]] $aRuleData
+	 * @param \DBObject $oSavedObject
+	 * @param \DBObject $oSourceObject
+	 *
+	 * @throws \Exception
 	 */
 	public static function RetrofitOnSourceObject($aRuleData, $oSavedObject, $oSourceObject)
 	{
@@ -208,6 +228,13 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 	/**
 	 * Preset the object to create or retrofit some values...
+	 *
+	 * @param string[] $aActions
+	 * @param \DBObject $oObjectToRead
+	 * @param \DBObject $oObjectToWrite
+	 * @param bool $bOnFormSubmit
+	 *
+	 * @throws \Exception
 	 */
 	public static function ExecActions($aActions, $oObjectToRead, $oObjectToWrite, $bOnFormSubmit = false)
 	{
@@ -217,7 +244,6 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			foreach(get_declared_classes() as $sPHPClass)
 			{
 				$oRefClass = new ReflectionClass($sPHPClass);
-				$oExtensionInstance = null;
 				if ($oRefClass->implementsInterface('iObjectCopierActionProvider'))
 				{
 					$oActionProvider = new $sPHPClass;
@@ -286,6 +312,12 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 	/**
 	 * Helper to check the attribute code before attempting to use it, thus generating the most relevant error message
+	 *
+	 * @param \DBObject $oObject
+	 * @param string $sAttCode
+	 *
+	 * @return mixed attribute value
+	 * @throws \Exception
 	 */
 	protected function GetAtt($oObject, $sAttCode)
 	{
@@ -306,6 +338,12 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 	/**
 	 * Helper to check the attribute code before attempting to use it, thus generating the most relevant error message
+	 *
+	 * @param \DBObject $oObject
+	 * @param string $sAttCode
+	 * @param mixed $value
+	 *
+	 * @throws \Exception
 	 */
 	protected function SetAtt($oObject, $sAttCode, $value)
 	{
@@ -319,6 +357,11 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	/**
 	 * Clone an object in memory (not the same as DBObject::Clone!)
 	 * It will be used to clone link sets
+	 *
+	 * @param \DBObject $oSourceObject
+	 *
+	 * @return \DBObject
+	 * @throws \Exception
 	 */
 	public function CloneObject($oSourceObject)
 	{
@@ -339,6 +382,13 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	/**
 	 * Helper to copy an attribute between two objects (in memory)
 	 * Used for several verbs like clone() and copy()
+	 *
+	 * @param \DBObject $oSourceObject
+	 * @param string $sSourceAttCode
+	 * @param \DBObject $oDestObject
+	 * @param string $sDestAttCode
+	 *
+	 * @throws \Exception
 	 */
 	public function CopyAttribute($oSourceObject, $sSourceAttCode, $oDestObject, $sDestAttCode)
 	{
@@ -360,8 +410,6 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			while ($oSourceLink = $oSourceSet->Fetch())
 			{
 				$oDestLink = $this->CloneObject($oSourceLink);
-				// Not necessary
-				// $oDestLink->Set($oSourceAttDef->GetExtKeyToMe(), 0);
 				$oDestSet->AddObject($oDestLink);
 			}
 			$this->SetAtt($oDestObject, $sDestAttCode, $oDestSet);
@@ -379,8 +427,11 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	 * @param DBObject $oDestObject
 	 * @param string $sDestAttCode
 	 *
-	 * @throws \Exception
 	 * @uses \ormCaseLog::GetLatestEntry()
+	 *
+	 * @throws \CoreException when getting source attribute value
+	 * @throws \CoreUnexpectedValue if source attribute is not a CaseLog
+	 * @throws \Exception when setting dest attribute
 	 */
 	public function CopyLastCaseLogEntry($oSourceObject, $sSourceAttCode, $oDestObject, $sDestAttCode)
 	{
@@ -388,7 +439,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 		if (!is_a($oSourceCaseLog, 'ormCaseLog'))
 		{
-			throw new Exception("tried to use copy_head verb with '$sSourceAttCode' source attribute, which is not a CaseLog field");
+			throw new CoreUnexpectedValue("tried to use copy_head verb with '$sSourceAttCode' source attribute, which is not a CaseLog field");
 		}
 
 		$sSourceLastCaseLogEntry = $oSourceCaseLog->GetLatestEntry('html');
@@ -397,6 +448,15 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 	/**
 	 * Handles the various actions (see the interface iObjectCopierActionProvider)
+	 *
+	 * @param string $sVerb
+	 * @param array $aParams
+	 * @param \DBObject $oObjectToRead
+	 * @param \DBObject $oObjectToWrite
+	 * @param bool $bOnFormSubmit
+	 *
+	 * @throws \CoreUnexpectedValue
+	 * @throws \Exception
 	 */
 	public function ExecAction($sVerb, $aParams, $oObjectToRead, $oObjectToWrite, $bOnFormSubmit = false)
 	{
@@ -540,9 +600,13 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 	/**
 	 * Format the labels depending on the rule settings, and defaulting to dictionary entries
-	 * @param aRuleData Rule settings
-	 * @param sMsgCode The code in the rule settings and default dictionary (e.g. menu_label, defaulting to object-copier:menu_label:default)
-	 * @param oSourceObject Optional: the source object
+	 *
+	 * @param array aRuleData Rule settings
+	 * @param string sMsgCode The code in the rule settings and default dictionary (e.g. menu_label, defaulting to
+	 *     object-copier:menu_label:default)
+	 * @param \DBObject oSourceObject Optional: the source object
+	 *
+	 * @throws \DictExceptionMissingString
 	 */
 	public static function FormatMessage($aRuleData, $sMsgCode, $oSourceObject = null)
 	{
