@@ -26,6 +26,16 @@ interface iObjectCopierActionProvider
 
 class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvider
 {
+	static private $sCurrentTransactionId = "notransactions";
+
+	/**
+	 * @param string $sCurrentTransactionId
+	 */
+	public static function SetCurrentTransactionId($sCurrentTransactionId)
+	{
+		self::$sCurrentTransactionId = $sCurrentTransactionId;
+	}
+
 	/**
 	 * Helper to log errors
 	 *
@@ -199,7 +209,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	/**
 	 * Prepare the destination object for user configuration (not saved yet!)
 	 *
-	 * @param string[string[]] $aRuleData
+	 * @param $aRuleData
 	 * @param \DBObject $oDestObject
 	 * @param \DBObject $oSourceObject
 	 * @param bool $bOnFormSubmit
@@ -312,7 +322,8 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			'append',
 			'add_to_list',
 			'apply_stimulus',
-			'call_method'
+			'call_method',
+			'clone_attachments',
 		);
 	}
 
@@ -596,6 +607,10 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 					throw new Exception("Unknown method ".get_class($oObjectToWrite)."::".$sMethod.'()');
 				}
 				call_user_func($aCallSpec, $oObjectToRead);
+				break;
+
+			case 'clone_attachments':
+				AttachmentPlugIn::CopyAttachments($oObjectToRead, self::$sCurrentTransactionId);
 				break;
 
 			default:
