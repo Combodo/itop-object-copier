@@ -97,9 +97,15 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	 *
 	 * This method is called by the framework for each menu.
 	 * The items will be inserted in the menu in the order of the returned array.
+	 *
 	 * @param int $iMenuId The identifier of the type of menu, as listed by the constants MENU_xxx
 	 * @param mixed $param Depends on $iMenuId, see the constants defined above
+	 *
 	 * @return object[] An array of ApplicationPopupMenuItem or an empty array if no action is to be added to the menu
+	 * @throws \CoreException
+	 * @throws \MissingQueryArgument
+	 * @throws \MySQLException
+	 * @throws \MySQLHasGoneAwayException
 	 */
 	public static function EnumItems($iMenuId, $param)
 	{
@@ -460,7 +466,6 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	 */
 	public function ExecAction($sVerb, $aParams, $oObjectToRead, $oObjectToWrite, $bOnFormSubmit = false)
 	{
-		IssueLog::Info("entrée dans ExecAction");
 		switch($sVerb)
 		{
 			case 'clone':
@@ -606,7 +611,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	 *     object-copier:menu_label:default)
 	 * @param \DBObject oSourceObject Optional: the source object
 	 *
-	 * @throws \DictExceptionMissingString
+	 * @return string
 	 */
 	public static function FormatMessage($aRuleData, $sMsgCode, $oSourceObject = null)
 	{
