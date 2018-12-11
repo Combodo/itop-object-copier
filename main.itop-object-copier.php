@@ -569,28 +569,32 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 				break;
 
 			case 'add_to_list':
-				$sSourceKeyAttCode = trim($aParams[0]);
-				$sTargetListAttCode = trim($aParams[1]); // indirect !!!
-				if (isset($aParams[2]) && isset($aParams[3]))
+				if (!$bOnFormSubmit)
 				{
-					$sRoleAttCode = trim($aParams[2]);
-					$sRoleValue = $aParams[3];
-				}
-
-				$iObjKey = $this->GetAtt($oObjectToRead, $sSourceKeyAttCode);
-				if ($iObjKey > 0)
-				{
-					$oLinkSet = $oObjectToWrite->Get($sTargetListAttCode);
-
-					$oListAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sTargetListAttCode);
-					$oLnk = MetaModel::NewObject($oListAttDef->GetLinkedClass());
-					$oLnk->Set($oListAttDef->GetExtKeyToRemote(), $iObjKey);
-					if (isset($sRoleAttCode))
+					// On submit don't add the links again
+					$sSourceKeyAttCode = trim($aParams[0]);
+					$sTargetListAttCode = trim($aParams[1]); // indirect !!!
+					if (isset($aParams[2]) && isset($aParams[3]))
 					{
-						$this->SetAtt($oLnk, $sRoleAttCode, $sRoleValue);
+						$sRoleAttCode = trim($aParams[2]);
+						$sRoleValue = $aParams[3];
 					}
-					$oLinkSet->AddObject($oLnk);
-					$this->SetAtt($oObjectToWrite, $sTargetListAttCode, $oLinkSet);
+
+					$iObjKey = $this->GetAtt($oObjectToRead, $sSourceKeyAttCode);
+					if ($iObjKey > 0)
+					{
+						$oLinkSet = $oObjectToWrite->Get($sTargetListAttCode);
+
+						$oListAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sTargetListAttCode);
+						$oLnk = MetaModel::NewObject($oListAttDef->GetLinkedClass());
+						$oLnk->Set($oListAttDef->GetExtKeyToRemote(), $iObjKey);
+						if (isset($sRoleAttCode))
+						{
+							$this->SetAtt($oLnk, $sRoleAttCode, $sRoleValue);
+						}
+						$oLinkSet->AddObject($oLnk);
+						$this->SetAtt($oObjectToWrite, $sTargetListAttCode, $oLinkSet);
+					}
 				}
 				break;
 
