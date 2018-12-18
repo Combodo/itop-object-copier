@@ -26,6 +26,16 @@ interface iObjectCopierActionProvider
 
 class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvider
 {
+	static private $sCurrentTransactionId = "notransactions";
+
+	/**
+	 * @param string $sCurrentTransactionId
+	 */
+	public static function SetCurrentTransactionId($sCurrentTransactionId)
+	{
+		self::$sCurrentTransactionId = $sCurrentTransactionId;
+	}
+
 	/**
 	 * Helper to log errors
 	 *
@@ -97,9 +107,15 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	 *
 	 * This method is called by the framework for each menu.
 	 * The items will be inserted in the menu in the order of the returned array.
+	 *
 	 * @param int $iMenuId The identifier of the type of menu, as listed by the constants MENU_xxx
 	 * @param mixed $param Depends on $iMenuId, see the constants defined above
+	 *
 	 * @return object[] An array of ApplicationPopupMenuItem or an empty array if no action is to be added to the menu
+	 * @throws \CoreException
+	 * @throws \MissingQueryArgument
+	 * @throws \MySQLException
+	 * @throws \MySQLHasGoneAwayException
 	 */
 	public static function EnumItems($iMenuId, $param)
 	{
@@ -193,7 +209,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	/**
 	 * Prepare the destination object for user configuration (not saved yet!)
 	 *
-	 * @param string[string[]] $aRuleData
+	 * @param $aRuleData
 	 * @param \DBObject $oDestObject
 	 * @param \DBObject $oSourceObject
 	 * @param bool $bOnFormSubmit
@@ -306,7 +322,8 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			'append',
 			'add_to_list',
 			'apply_stimulus',
-			'call_method'
+			'call_method',
+			'clone_attachments',
 		);
 	}
 
@@ -460,7 +477,6 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	 */
 	public function ExecAction($sVerb, $aParams, $oObjectToRead, $oObjectToWrite, $bOnFormSubmit = false)
 	{
-		IssueLog::Info("entrée dans ExecAction");
 		switch($sVerb)
 		{
 			case 'clone':
@@ -553,28 +569,32 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 				break;
 
 			case 'add_to_list':
-				$sSourceKeyAttCode = trim($aParams[0]);
-				$sTargetListAttCode = trim($aParams[1]); // indirect !!!
-				if (isset($aParams[2]) && isset($aParams[3]))
+				if (!$bOnFormSubmit)
 				{
-					$sRoleAttCode = trim($aParams[2]);
-					$sRoleValue = $aParams[3];
-				}
-
-				$iObjKey = $this->GetAtt($oObjectToRead, $sSourceKeyAttCode);
-				if ($iObjKey > 0)
-				{
-					$oLinkSet = $oObjectToWrite->Get($sTargetListAttCode);
-
-					$oListAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sTargetListAttCode);
-					$oLnk = MetaModel::NewObject($oListAttDef->GetLinkedClass());
-					$oLnk->Set($oListAttDef->GetExtKeyToRemote(), $iObjKey);
-					if (isset($sRoleAttCode))
+					// On submit don't add the links again
+					$sSourceKeyAttCode = trim($aParams[0]);
+					$sTargetListAttCode = trim($aParams[1]); // indirect !!!
+					if (isset($aParams[2]) && isset($aParams[3]))
 					{
-						$this->SetAtt($oLnk, $sRoleAttCode, $sRoleValue);
+						$sRoleAttCode = trim($aParams[2]);
+						$sRoleValue = $aParams[3];
 					}
-					$oLinkSet->AddObject($oLnk);
-					$this->SetAtt($oObjectToWrite, $sTargetListAttCode, $oLinkSet);
+
+					$iObjKey = $this->GetAtt($oObjectToRead, $sSourceKeyAttCode);
+					if ($iObjKey > 0)
+					{
+						$oLinkSet = $oObjectToWrite->Get($sTargetListAttCode);
+
+						$oListAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sTargetListAttCode);
+						$oLnk = MetaModel::NewObject($oListAttDef->GetLinkedClass());
+						$oLnk->Set($oListAttDef->GetExtKeyToRemote(), $iObjKey);
+						if (isset($sRoleAttCode))
+						{
+							$this->SetAtt($oLnk, $sRoleAttCode, $sRoleValue);
+						}
+						$oLinkSet->AddObject($oLnk);
+						$this->SetAtt($oObjectToWrite, $sTargetListAttCode, $oLinkSet);
+					}
 				}
 				break;
 
@@ -593,6 +613,10 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 				call_user_func($aCallSpec, $oObjectToRead);
 				break;
 
+			case 'clone_attachments':
+				AttachmentPlugIn::CopyAttachments($oObjectToRead, self::$sCurrentTransactionId);
+				break;
+
 			default:
 				throw new Exception("Invalid verb");
 		}
@@ -606,7 +630,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	 *     object-copier:menu_label:default)
 	 * @param \DBObject oSourceObject Optional: the source object
 	 *
-	 * @throws \DictExceptionMissingString
+	 * @return string
 	 */
 	public static function FormatMessage($aRuleData, $sMsgCode, $oSourceObject = null)
 	{

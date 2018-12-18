@@ -1,5 +1,5 @@
 <?php
-// Copyright (C) 2014-2017 Combodo SARL
+// Copyright (C) 2014-2018 Combodo SARL
 //
 //   This file is part of iTop.
 //
@@ -22,22 +22,27 @@
  * - operation=new to show the form to create an object
  * - operation=create to execute the operation  
  *
- * @copyright   Copyright (C) 2014-2017 Combodo SARL
+ * @copyright   Copyright (C) 2014-2018 Combodo SARL
  * @license     http://opensource.org/licenses/AGPL-3.0
  */
 
 
 /**
  * Apply the 'next-action' to the given object or redirect to the page that prompts for additional information if needed
+ *
  * @param $oP WebPage The page for the output
  * @param $oObj CMDBObject The object to process
  * @param $sNextAction string The code of the stimulus for the 'action' (i.e. Transition) to apply
+ *
+ * @throws \ApplicationException
+ * @throws \CoreCannotSaveObjectException
+ * @throws \CoreException
+ * @throws \CoreUnexpectedValue
  */
 function ApplyNextAction(Webpage $oP, CMDBObject $oObj, $sNextAction)
 {
 	// Here handle the apply stimulus
 	$aTransitions = $oObj->EnumTransitions();
-	$aStimuli = MetaModel::EnumStimuli(get_class($oObj));
 	if (!isset($aTransitions[$sNextAction]))
 	{
 		// Invalid stimulus
@@ -59,7 +64,7 @@ function ApplyNextAction(Webpage $oP, CMDBObject $oObj, $sNextAction)
 	{
 		// redirect to the 'stimulus' action
 		$oAppContext = new ApplicationContext();
-//echo "<p>Missing Attributes <pre>".print_r($aExpectedAttributes, true)."</pre></p>\n";
+		//echo "<p>Missing Attributes <pre>".print_r($aExpectedAttributes, true)."</pre></p>\n";
 		
 		$oP->add_header('Location: '.utils::GetAbsoluteUrlAppRoot().'pages/UI.php?operation=stimulus&class='.get_class($oObj).'&stimulus='.$sNextAction.'&id='.$oObj->getKey().'&'.$oAppContext->GetForLink());
 	}
@@ -83,9 +88,9 @@ function ReloadAndDisplay($oPage, $oObj, $sMessageId = '', $sMessage = '', $sSev
  * ***********************************************************************************/
 try
 {
-// Must be launched by exec.php
-//
-//	require_once('../approot.inc.php');
+	// Must be launched by exec.php
+	//
+	//	require_once('../approot.inc.php');
 	require_once(APPROOT.'/application/application.inc.php');
 	require_once(APPROOT.'/application/itopwebpage.class.inc.php');
 	require_once(APPROOT.'/application/wizardhelper.class.inc.php');
@@ -203,6 +208,7 @@ try
 			$aCopyArgs['source_id'] = $iSourceId;
 			$aCopyArgs['source_class'] = $sSourceClass;
 			$aCopyArgs['action'] = utils::GetAbsoluteUrlModulePage(basename(__DIR__), basename(__FILE__)); // 'action' must be specified for compatibility with iTop 2.2.0
+			$aCopyArgs['transaction_id'] = utils::GetNewTransactionId();
 
 			if (!empty($sRealClass))
 			{
@@ -225,6 +231,7 @@ try
 				// Specific to itop-object-copier
 				try
 				{
+					iTopObjectCopier::SetCurrentTransactionId($aCopyArgs['transaction_id']);
 					iTopObjectCopier::PrepareObject($aRuleData, $oObjToClone, $oSourceObject);
 				}
 				catch (Exception $e)
@@ -357,7 +364,7 @@ EOF
 
 		$sClass = utils::ReadPostedParam('class', '', 'class');
 		$sClassLabel = MetaModel::GetName($sClass);
-		$sTransactionId = utils::ReadPostedParam('transaction_id', '');
+			$sTransactionId = utils::ReadPostedParam('transaction_id', '', 'transaction_id');
 		if ( empty($sClass) ) // TO DO: check that the class name is valid !
 		{
 			throw new ApplicationException(Dict::Format('UI:Error:1ParametersMissing', 'class'));
@@ -427,6 +434,7 @@ EOF
 				if (!empty($sNextAction))
 				{
 					$oP->add("<h1>$sMessage</h1>");
+					/** @var \CMDBObject $oObj */
 					ApplyNextAction($oP, $oObj, $sNextAction);
 				}
 				else
