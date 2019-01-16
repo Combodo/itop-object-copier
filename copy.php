@@ -203,7 +203,7 @@ try
 			$aCopyArgs = array();
 			$aCopyArgs['exec_module'] = utils::ReadParam('exec_module', null, false, 'raw_data');
 			$aCopyArgs['exec_page'] = utils::ReadParam('exec_page', null, false, 'raw_data');
-			$aCopyArgs['exec_env'] = utils::ReadParam('exec_env', null, false, 'raw_data');
+			$aCopyArgs['exec_env'] = utils::ReadParam('exec_env', utils::GetCurrentEnvironment());
 			$aCopyArgs['rule'] = $iRule;
 			$aCopyArgs['source_id'] = $iSourceId;
 			$aCopyArgs['source_class'] = $sSourceClass;
@@ -299,7 +299,7 @@ EOF
 				{
 					if (is_scalar($value))
 					{
-						$oP->add("<input type=\"hidden\" name=\"$sName\" value=\"$value\">\n");
+						$oP->add("<input type=\"hidden\" name=\"$sName\" value=\"".utils::HtmlEntities($value)."\">\n");
 					}
 				}
 				$oP->add($oAppContext->GetForForm());
