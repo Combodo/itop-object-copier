@@ -250,7 +250,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	 * @param \DBObject $oObjectToWrite
 	 * @param bool $bOnFormSubmit
 	 *
-	 * @throws \Exception
+	 * @throws \ReflectionException
 	 */
 	public static function ExecActions($aActions, $oObjectToRead, $oObjectToWrite, $bOnFormSubmit = false)
 	{
@@ -483,7 +483,10 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 				foreach ($aParams as $sAttCode)
 				{
 					$sAttCode = trim($sAttCode);
-					$this->CopyAttribute($oObjectToRead, $sAttCode, $oObjectToWrite, $sAttCode);
+					if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sAttCode))
+					{
+						$this->CopyAttribute($oObjectToRead, $sAttCode, $oObjectToWrite, $sAttCode);
+					}
 				}
 				break;
 
@@ -493,57 +496,55 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 					// Note: Condition should match those from DBObject::Set(), otherwise we might encounter an exception.
 					if ($oAttDef->IsScalar() && $oAttDef->IsWritable())
 					{
-						$this->CopyAttribute($oObjectToRead, $sAttCode, $oObjectToWrite, $sAttCode);
+						if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sAttCode))
+						{
+							$this->CopyAttribute($oObjectToRead, $sAttCode, $oObjectToWrite, $sAttCode);
+						}
 					}
 				}
 				break;
 
 			case 'copy':
-				$sSourceAttCode = trim($aParams[0]);
 				$sDestAttCode = trim($aParams[1]);
-				$this->CopyAttribute($oObjectToRead, $sSourceAttCode, $oObjectToWrite, $sDestAttCode);
+				if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sDestAttCode))
+				{
+					$sSourceAttCode = trim($aParams[0]);
+					$this->CopyAttribute($oObjectToRead, $sSourceAttCode, $oObjectToWrite, $sDestAttCode);
+				}
 				break;
 
 			case 'copy_head':
-				$sSourceAttCode = trim($aParams[0]);
 				$sDestAttCode = trim($aParams[1]);
-				$this->CopyLastCaseLogEntry($oObjectToRead, $sSourceAttCode, $oObjectToWrite, $sDestAttCode);
+				if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sDestAttCode))
+				{
+					$sSourceAttCode = trim($aParams[0]);
+					$this->CopyLastCaseLogEntry($oObjectToRead, $sSourceAttCode, $oObjectToWrite, $sDestAttCode);
+				}
 				break;
 
 			case 'reset':
 				$sAttCode = trim($aParams[0]);
-				if (!MetaModel::IsValidAttCode(get_class($oObjectToWrite), $sAttCode))
+				if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sAttCode))
 				{
-					throw new Exception("Unknown attribute ".get_class($oObjectToWrite)."::".$sAttCode);
+					$oAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sAttCode);
+					$this->SetAtt($oObjectToWrite, $sAttCode, $oAttDef->GetDefaultValue());
 				}
-				$oAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sAttCode);
-				$this->SetAtt($oObjectToWrite, $sAttCode, $oAttDef->GetDefaultValue());
 				break;
 
 			case 'nullify':
 				$sAttCode = trim($aParams[0]);
-				if (!MetaModel::IsValidAttCode(get_class($oObjectToWrite), $sAttCode))
+				if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sAttCode))
 				{
-					throw new Exception("Unknown attribute ".get_class($oObjectToWrite)."::".$sAttCode);
+					$oAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sAttCode);
+					$this->SetAtt($oObjectToWrite, $sAttCode, $oAttDef->GetNullValue());
 				}
-				$oAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sAttCode);
-				$this->SetAtt($oObjectToWrite, $sAttCode, $oAttDef->GetNullValue());
 				break;
 
 			case 'set':
 				$sAttCode = trim($aParams[0]);
-				$sRawValue = trim($aParams[1]);
-
-				// Do not preset caselog value during form submission
-				$iFlags = $oObjectToWrite->GetAttributeFlags($sAttCode);
-				$bUpdate = true;
-				if ($bOnFormSubmit)
+				if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sAttCode))
 				{
-					// In this case, write only hidden case logs
-					$bUpdate = ($iFlags & OPT_ATT_READONLY) || ($iFlags & OPT_ATT_HIDDEN);
-				}
-				if ($bUpdate)
-				{
+					$sRawValue = trim($aParams[1]);
 					$aContext = $oObjectToRead->ToArgs('this');
 					foreach (self::$aContextObjects as $sAlias => $oObject)
 					{
@@ -560,20 +561,23 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 			case 'append':
 				$sAttCode = trim($aParams[0]);
-				$sRawAddendum = $aParams[1];
-				$aContext = $oObjectToRead->ToArgs('this');
-				$aContext['current_contact_id'] = UserRights::GetContactId();
-				$aContext['current_contact_friendlyname'] = UserRights::GetUserFriendlyName();
-				$sAddendum = MetaModel::ApplyParams($sRawAddendum, $aContext);
-				$this->SetAtt($oObjectToWrite, $sAttCode, $this->GetAtt($oObjectToWrite, $sAttCode).$sAddendum);
+				if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sAttCode))
+				{
+					$sRawAddendum = $aParams[1];
+					$aContext = $oObjectToRead->ToArgs('this');
+					$aContext['current_contact_id'] = UserRights::GetContactId();
+					$aContext['current_contact_friendlyname'] = UserRights::GetUserFriendlyName();
+					$sAddendum = MetaModel::ApplyParams($sRawAddendum, $aContext);
+					$this->SetAtt($oObjectToWrite, $sAttCode, $this->GetAtt($oObjectToWrite, $sAttCode).$sAddendum);
+				}
 				break;
 
 			case 'add_to_list':
-				if (!$bOnFormSubmit)
+				$sTargetListAttCode = trim($aParams[1]); // indirect !!!
+				if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sTargetListAttCode))
 				{
 					// On submit don't add the links again
 					$sSourceKeyAttCode = trim($aParams[0]);
-					$sTargetListAttCode = trim($aParams[1]); // indirect !!!
 					if (isset($aParams[2]) && isset($aParams[3]))
 					{
 						$sRoleAttCode = trim($aParams[2]);
@@ -599,8 +603,12 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 				break;
 
 			case 'apply_stimulus':
-				$sStimulus = trim($aParams[0]);
-				$oObjectToWrite->ApplyStimulus($sStimulus);
+				if ($oObjectToWrite->GetKey() > 0)
+				{
+					// Do not apply stimulus if the object is not already created
+					$sStimulus = trim($aParams[0]);
+					$oObjectToWrite->ApplyStimulus($sStimulus);
+				}
 				break;
 
 			case 'call_method':
@@ -614,7 +622,10 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 				break;
 
 			case 'clone_attachments':
-				AttachmentPlugIn::CopyAttachments($oObjectToRead, self::$sCurrentTransactionId);
+				if (!$bOnFormSubmit)
+				{
+					AttachmentPlugIn::CopyAttachments($oObjectToRead, self::$sCurrentTransactionId);
+				}
 				break;
 
 			default:
@@ -671,4 +682,24 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		}
 		return $sRet;
 	}
+
+	/**
+	 * @param $oObjectToWrite
+	 * @param $bOnFormSubmit
+	 * @param $sAttCode
+	 *
+	 * @return bool
+	 */
+	private function ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sAttCode)
+	{
+		// Do not override value on form submission
+		$iFlags = $oObjectToWrite->GetAttributeFlags($sAttCode);
+		$bUpdate = true;
+		if ($bOnFormSubmit)
+		{
+			// In this case, write only hidden attribute
+			$bUpdate = ($iFlags & OPT_ATT_READONLY) || ($iFlags & OPT_ATT_HIDDEN);
+		}
+		return $bUpdate;
+}
 }
