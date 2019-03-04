@@ -275,7 +275,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		{
 			try
 			{
-				if (preg_match('/^(\S*)\s*\((.*)\)$/ms', $sAction, $aMatches)) // multiline and newline matched by a dot
+				if (preg_match('/^([^(]*)\s*\((.*)\)$/ms', $sAction, $aMatches)) // multiline and newline matched by a dot
 				{
 					$sVerb = trim($aMatches[1]);
 					$sParams = $aMatches[2];
