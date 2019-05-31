@@ -689,17 +689,23 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	 * @param $sAttCode
 	 *
 	 * @return bool
+	 * @throws \CoreException
 	 */
-	private function ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sAttCode)
+	private function ShouldUpdateAttribute(cmdbAbstractObject $oObjectToWrite, $bOnFormSubmit, $sAttCode)
 	{
 		// Do not override value on form submission
 		$iFlags = $oObjectToWrite->GetAttributeFlags($sAttCode);
 		$bUpdate = true;
 		if ($bOnFormSubmit)
 		{
-			// In this case, write only hidden attribute
-			$bUpdate = ($iFlags & OPT_ATT_READONLY) || ($iFlags & OPT_ATT_HIDDEN);
+			// State attribute code is implicitly readonly
+			$sStateAttributeCode = MetaModel::GetStateAttributeCode(get_class($oObjectToWrite));
+			if ($sStateAttributeCode !== $sAttCode)
+			{
+				// In this case, write only hidden attribute
+				$bUpdate = ($iFlags & OPT_ATT_READONLY) || ($iFlags & OPT_ATT_HIDDEN);
+			}
 		}
 		return $bUpdate;
-}
+	}
 }
