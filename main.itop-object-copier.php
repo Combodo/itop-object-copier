@@ -624,7 +624,14 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			case 'clone_attachments':
 				if (!$bOnFormSubmit)
 				{
-					AttachmentPlugIn::CopyAttachments($oObjectToRead, self::$sCurrentTransactionId);
+					if (method_exists('AttachmentPlugIn','CopyAttachments'))
+					{
+						AttachmentPlugIn::CopyAttachments($oObjectToRead, self::$sCurrentTransactionId);
+					}
+					else
+					{
+						throw new Exception("Verb '$sVerb' not supported by this iTop version");
+					}
 				}
 				break;
 
