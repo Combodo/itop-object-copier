@@ -22,10 +22,10 @@
  */
 Dict::Add('DE DE', 'German', 'Deutsch', array(
 	// Dictionary entries go here
-	'object-copier:menu_label:default' => 'Clone...~~',
-	'object-copier:form_label:default' => 'Cloning %1$s~~',
-	'object-copier:report_label:default' => 'Cloned from %1$s~~',
+	'object-copier:menu_label:default' => 'Klone...',
+	'object-copier:form_label:default' => 'Klone %1$s',
+	'object-copier:report_label:default' => 'Geklont von %1$s',
 
-	'object-copier:error:preset' => 'An error has been encountered while presetting the object to create: %1$s. Please contact your administrator.~~',
-	'object-copier:error:retrofit' => 'An error has been encountered while retrofitting some information back to the source object: %1$s. Please contact your administrator.~~',
+	'object-copier:error:preset' => 'Bei der Vorbefüllung des neuen Objekts %1$s trat ein Fehler auf. Bitte kontaktieren sie einen Administrator',
+	'object-copier:error:retrofit' => 'Beim Zurückschreiben in das Quellobjekt %1$s trat ein Fehler auf. Bitte kontaktieren sie einen Administrator',
 ));
