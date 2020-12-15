@@ -697,13 +697,16 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	 *
 	 * @return bool
 	 * @throws \CoreException
+	 * @throws \Exception
 	 */
 	private function ShouldUpdateAttribute(cmdbAbstractObject $oObjectToWrite, $bOnFormSubmit, $sAttCode)
 	{
-		// Do not override value on form submission
+		$oAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sAttCode);
+		
+		// Do not override value on form submission unless it's a caselog or a direct linkset as they work in forms with deltas
 		$iFlags = $oObjectToWrite->GetAttributeFlags($sAttCode);
 		$bUpdate = true;
-		if ($bOnFormSubmit)
+		if ($bOnFormSubmit && !($oAttDef instanceof AttributeCaseLog) && !($oAttDef->IsLinkSet() && !$oAttDef->IsIndirect()))
 		{
 			// State attribute code is implicitly readonly
 			$sStateAttributeCode = MetaModel::GetStateAttributeCode(get_class($oObjectToWrite));
