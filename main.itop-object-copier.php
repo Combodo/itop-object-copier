@@ -483,7 +483,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 				foreach ($aParams as $sAttCode)
 				{
 					$sAttCode = trim($sAttCode);
-					if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sAttCode))
+					if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sAttCode,$sVerb))
 					{
 						$this->CopyAttribute($oObjectToRead, $sAttCode, $oObjectToWrite, $sAttCode);
 					}
@@ -496,7 +496,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 					// Note: Condition should match those from DBObject::Set(), otherwise we might encounter an exception.
 					if ($oAttDef->IsScalar() && $oAttDef->IsWritable())
 					{
-						if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sAttCode))
+						if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sAttCode,$sVerb))
 						{
 							$this->CopyAttribute($oObjectToRead, $sAttCode, $oObjectToWrite, $sAttCode);
 						}
@@ -506,7 +506,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 			case 'copy':
 				$sDestAttCode = trim($aParams[1]);
-				if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sDestAttCode))
+				if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sDestAttCode,$sVerb))
 				{
 					$sSourceAttCode = trim($aParams[0]);
 					$this->CopyAttribute($oObjectToRead, $sSourceAttCode, $oObjectToWrite, $sDestAttCode);
@@ -515,7 +515,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 			case 'copy_head':
 				$sDestAttCode = trim($aParams[1]);
-				if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sDestAttCode))
+				if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sDestAttCode,$sVerb))
 				{
 					$sSourceAttCode = trim($aParams[0]);
 					$this->CopyLastCaseLogEntry($oObjectToRead, $sSourceAttCode, $oObjectToWrite, $sDestAttCode);
@@ -524,7 +524,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 			case 'reset':
 				$sAttCode = trim($aParams[0]);
-				if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sAttCode))
+				if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sAttCode,$sVerb))
 				{
 					$oAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sAttCode);
 					$this->SetAtt($oObjectToWrite, $sAttCode, $oAttDef->GetDefaultValue());
@@ -533,7 +533,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 			case 'nullify':
 				$sAttCode = trim($aParams[0]);
-				if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sAttCode))
+				if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sAttCode,$sVerb))
 				{
 					$oAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sAttCode);
 					$this->SetAtt($oObjectToWrite, $sAttCode, $oAttDef->GetNullValue());
@@ -542,7 +542,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 			case 'set':
 				$sAttCode = trim($aParams[0]);
-				if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sAttCode))
+				if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sAttCode,$sVerb))
 				{
 					$sRawValue = trim($aParams[1]);
 					$aContext = $oObjectToRead->ToArgs('this');
@@ -561,7 +561,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 			case 'append':
 				$sAttCode = trim($aParams[0]);
-				if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sAttCode))
+				if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sAttCode,$sVerb))
 				{
 					$sRawAddendum = $aParams[1];
 					$aContext = $oObjectToRead->ToArgs('this');
@@ -574,7 +574,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 
 			case 'add_to_list':
 				$sTargetListAttCode = trim($aParams[1]); // indirect !!!
-				if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sTargetListAttCode))
+				if ($this->ShouldUpdateAttribute($oObjectToWrite, $bOnFormSubmit, $sTargetListAttCode,$sVerb))
 				{
 					// On submit don't add the links again
 					$sSourceKeyAttCode = trim($aParams[0]);
@@ -699,20 +699,21 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	 * @throws \CoreException
 	 * @throws \Exception
 	 */
-	private function ShouldUpdateAttribute(cmdbAbstractObject $oObjectToWrite, $bOnFormSubmit, $sAttCode)
+	private function ShouldUpdateAttribute(cmdbAbstractObject $oObjectToWrite, $bOnFormSubmit, $sAttCode, $sVerb ='')
 	{
 		$oAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sAttCode);
 		
 		// Do not override value on form submission unless it's a caselog or a direct linkset as they work in forms with deltas
-		$iFlags = $oObjectToWrite->GetAttributeFlags($sAttCode);
 		$bUpdate = true;
-		if ($bOnFormSubmit && !($oAttDef instanceof AttributeCaseLog) && !($oAttDef->IsLinkSet() && !$oAttDef->IsIndirect()))
+		if ($bOnFormSubmit && !($oAttDef instanceof AttributeCaseLog) && !($oAttDef->IsLinkSet() && !$oAttDef->IsIndirect())
+		||	($bOnFormSubmit && $sVerb != 'clone' && ($oAttDef instanceof AttributeCaseLog)) )
 		{
 			// State attribute code is implicitly readonly
 			$sStateAttributeCode = MetaModel::GetStateAttributeCode(get_class($oObjectToWrite));
 			if ($sStateAttributeCode !== $sAttCode)
 			{
 				// In this case, write only hidden attribute
+				$iFlags = $oObjectToWrite->GetAttributeFlags($sAttCode);
 				$bUpdate = ($iFlags & OPT_ATT_READONLY) || ($iFlags & OPT_ATT_HIDDEN);
 			}
 		}
