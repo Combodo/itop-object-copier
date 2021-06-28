@@ -5,7 +5,7 @@
 
 SetupWebPage::AddModule(
 	__FILE__, // Path to the current file, all other file names are relative to the directory containing this file
-	'itop-object-copier/1.3.5',
+	'itop-object-copier/1.3.6',
 	array(
 		// Identification
 		//
@@ -14,9 +14,7 @@ SetupWebPage::AddModule(
 
 		// Setup
 		//
-		'dependencies' => array(
-
-		),
+		'dependencies' => array(),
 		'mandatory' => false,
 		'visible' => true,
 
@@ -25,9 +23,7 @@ SetupWebPage::AddModule(
 		'datamodel' => array(
 			'main.itop-object-copier.php'
 		),
-		'webservice' => array(
-
-		),
+		'webservice' => array(),
 		'data.struct' => array(
 			// add your 'structure' definition XML files here,
 		),
