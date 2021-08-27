@@ -25,6 +25,7 @@
  * @copyright   Copyright (C) 2014-2018 Combodo SARL
  * @license     http://opensource.org/licenses/AGPL-3.0
  */
+use Combodo\iTop\Application\UI\Base\Component\Alert\AlertUIBlockFactory;
 
 
 /**
@@ -172,7 +173,14 @@ try
 			}
 			$oSourceObject = MetaModel::GetObject($sSourceClass, $iSourceId);
 			$sTitle = iTopObjectCopier::FormatMessage($aRuleData, 'form_label', $oSourceObject);
-			$oP->add("<div class=\"header_message message_info\">$sTitle</div>\n");
+			if (version_compare(ITOP_DESIGN_LATEST_VERSION , '3.0') < 0) {
+				$oP->add("<div class=\"header_message message_info\">$sTitle</div>\n");
+			} else  {
+				$oAlert= AlertUIBlockFactory::MakeForInformation('',$sTitle);
+				$oAlert->SetIsCollapsible(false);
+				$oP->AddSubBlock($oAlert);
+			}
+
 
 			// If the specified class has subclasses, ask the user an instance of which class to create
 			$aSubClasses = MetaModel::EnumChildClasses($sClass, ENUM_CHILD_CLASSES_ALL); // Including the specified class itself
@@ -215,9 +223,11 @@ try
 				// Display the creation form
 				$sClassLabel = MetaModel::GetName($sRealClass);
 				// Note: some code has been duplicated to the case 'apply_new' when a data integrity issue has been found
-				$oP->set_title(Dict::Format('UI:CreationPageTitle_Class', $sClassLabel));
-				$oP->add("<h1>".MetaModel::GetClassIcon($sRealClass)."&nbsp;".Dict::Format('UI:CreationTitle_Class', $sClassLabel)."</h1>\n");
-				$oP->add("<div class=\"wizContainer\">\n");
+				if (version_compare(ITOP_DESIGN_LATEST_VERSION , '3.0') < 0) {
+					$oP->set_title(Dict::Format('UI:CreationPageTitle_Class', $sClassLabel));
+					$oP->add("<h1>".MetaModel::GetClassIcon($sRealClass)."&nbsp;".Dict::Format('UI:CreationTitle_Class', $sClassLabel)."</h1>\n");
+					$oP->add("<div class=\"wizContainer\">\n");
+				}
 
 				// Set all the default values in an object and clone this "default" object
 				$oObjToClone = MetaModel::NewObject($sRealClass);
@@ -238,12 +248,19 @@ try
 				{
 					iTopObjectCopier::LogError($iRule, 'preset - '.$e->getMessage());
 					$sMessage = Dict::Format('object-copier:error:preset', $e->getMessage());
-					$oP->add("<div class=\"header_message message_error\">$sMessage</div>\n");
+					if (version_compare(ITOP_DESIGN_LATEST_VERSION , '3.0') < 0) {
+						$oP->add("<div class=\"header_message message_error\">$sMessage</div>\n");
+					} else  {
+						$oAlert= AlertUIBlockFactory::MakeForFailure($sMessage);
+						$oAlert->SetIsCollapsible(false);
+						$oP->AddSubBlock($oAlert);
+					}
 				}
 
 				cmdbAbstractObject::DisplayCreationForm($oP, $sRealClass, $oObjToClone, array(), $aCopyArgs);
-				$oP->add("</div>\n");
-
+				if (version_compare(ITOP_DESIGN_LATEST_VERSION , '3.0') < 0) {
+					$oP->add("</div>\n");
+				}
 				$aCurrentValues = array();
 				foreach (MetaModel::ListAttributeDefs(get_class($oObjToClone)) as $sAttCode => $oAttDef)
 				{
@@ -371,7 +388,13 @@ EOF
 		}
 		if (!utils::IsTransactionValid($sTransactionId, false))
 		{
-			$oP->p("<strong>".Dict::S('UI:Error:ObjectAlreadyCreated')."</strong>\n");
+			if (version_compare(ITOP_DESIGN_LATEST_VERSION , '3.0') < 0) {
+				$oP->p("<strong>".Dict::S('UI:Error:ObjectAlreadyCreated')."</strong>\n");
+			} else {
+				$oAlert= AlertUIBlockFactory::MakeForFailure(Dict::S('UI:Error:ObjectAlreadyCreated'));
+				$oAlert->SetIsCollapsible(false);
+				$oP->AddSubBlock($oAlert);
+			}
 		}
 		else
 		{
@@ -447,11 +470,15 @@ EOF
 			{
 				// Found issues, explain and give the user a second chance
 				//
-				$oP->set_title(Dict::Format('UI:CreationPageTitle_Class', $sClassLabel));
-				$oP->add("<h1>".MetaModel::GetClassIcon($sClass)."&nbsp;".Dict::Format('UI:CreationTitle_Class', $sClassLabel)."</h1>\n");
-				$oP->add("<div class=\"wizContainer\">\n");
+				if (version_compare(ITOP_DESIGN_LATEST_VERSION , '3.0') < 0) {
+					$oP->set_title(Dict::Format('UI:CreationPageTitle_Class', $sClassLabel));
+					$oP->add("<h1>".MetaModel::GetClassIcon($sClass)."&nbsp;".Dict::Format('UI:CreationTitle_Class', $sClassLabel)."</h1>\n");
+					$oP->add("<div class=\"wizContainer\">\n");
+				}
 				cmdbAbstractObject::DisplayCreationForm($oP, $sClass, $oObj);
-				$oP->add("</div>\n");
+				if (version_compare(ITOP_DESIGN_LATEST_VERSION , '3.0') < 0) {
+					$oP->add("</div>\n");
+				}
 				$sIssueDesc = Dict::Format('UI:ObjectCouldNotBeWritten', implode(', ', $aIssues));
 				$oP->add_ready_script("alert('".addslashes($sIssueDesc)."');");
 			}
