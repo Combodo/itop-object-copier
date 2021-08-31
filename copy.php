@@ -307,60 +307,52 @@ EOF
 			else
 			{
 				// Select the derived class to create
-				$sClassLabel = MetaModel::GetName($sClass);
-				$oP->add("<h1>".MetaModel::GetClassIcon($sClass)."&nbsp;".Dict::Format('UI:CreationTitle_Class', $sClassLabel)."</h1>\n");
-				$oP->add("<div class=\"wizContainer\">\n");
-				$oP->add('<form>');
-				$oP->add('<p>'.Dict::Format('UI:SelectTheTypeOf_Class_ToCreate', $sClassLabel));
-				foreach($aCopyArgs as $sName => $value)
-				{
-					if (is_scalar($value))
-					{
-						$oP->add("<input type=\"hidden\" name=\"$sName\" value=\"".utils::HtmlEntities($value)."\">\n");
-					}
-				}
-				$oP->add($oAppContext->GetForForm());
-				$oP->add("<input type=\"hidden\" name=\"checkSubclass\" value=\"0\">\n");
-				$oP->add("<input type=\"hidden\" name=\"operation\" value=\"new\">\n");
-				$aDefaults = utils::ReadParam('default', array(), false, 'raw_data');
-				foreach($aDefaults as $key => $value)
-				{
-					if (is_array($value))
-					{
-						foreach($value as $key2 => $value2)
-						{
-							if (is_array($value2))
-							{
-								foreach($value2 as $key3 => $value3)
-								{
-									$sValue = htmlentities($value3, ENT_QUOTES, 'UTF-8');
-									$oP->add("<input type=\"hidden\" name=\"default[$key][$key2][$key3]\" value=\"$sValue\">\n");
-								}
-							}
-							else
-							{
-								$sValue = htmlentities($value2, ENT_QUOTES, 'UTF-8');
-								$oP->add("<input type=\"hidden\" name=\"default[$key][$key2]\" value=\"$sValue\">\n");
-							}
+				if (version_compare(ITOP_DESIGN_LATEST_VERSION , '3.0') < 0) {
+					$sClassLabel = MetaModel::GetName($sClass);
+					$oP->add("<h1>".MetaModel::GetClassIcon($sClass)."&nbsp;".Dict::Format('UI:CreationTitle_Class', $sClassLabel)."</h1>\n");
+					$oP->add("<div class=\"wizContainer\">\n");
+					$oP->add('<form>');
+					$oP->add('<p>'.Dict::Format('UI:SelectTheTypeOf_Class_ToCreate', $sClassLabel));
+					foreach ($aCopyArgs as $sName => $value) {
+						if (is_scalar($value)) {
+							$oP->add("<input type=\"hidden\" name=\"$sName\" value=\"".utils::HtmlEntities($value)."\">\n");
 						}
 					}
-					else
-					{
-						$sValue = htmlentities($value, ENT_QUOTES, 'UTF-8');
-						$oP->add("<input type=\"hidden\" name=\"default[$key]\" value=\"$sValue\">\n");
+					$oP->add($oAppContext->GetForForm());
+					$oP->add("<input type=\"hidden\" name=\"checkSubclass\" value=\"0\">\n");
+					$oP->add("<input type=\"hidden\" name=\"operation\" value=\"new\">\n");
+					$aDefaults = utils::ReadParam('default', array(), false, 'raw_data');
+					foreach ($aDefaults as $key => $value) {
+						if (is_array($value)) {
+							foreach ($value as $key2 => $value2) {
+								if (is_array($value2)) {
+									foreach ($value2 as $key3 => $value3) {
+										$sValue = htmlentities($value3, ENT_QUOTES, 'UTF-8');
+										$oP->add("<input type=\"hidden\" name=\"default[$key][$key2][$key3]\" value=\"$sValue\">\n");
+									}
+								} else {
+									$sValue = htmlentities($value2, ENT_QUOTES, 'UTF-8');
+									$oP->add("<input type=\"hidden\" name=\"default[$key][$key2]\" value=\"$sValue\">\n");
+								}
+							}
+						} else {
+							$sValue = htmlentities($value, ENT_QUOTES, 'UTF-8');
+							$oP->add("<input type=\"hidden\" name=\"default[$key]\" value=\"$sValue\">\n");
+						}
 					}
+					$oP->add('<select name="class">');
+					asort($aPossibleClasses);
+					foreach ($aPossibleClasses as $sClassName => $sClassLabel) {
+						$sSelected = ($sClassName == $sClass) ? 'selected' : '';
+						$oP->add("<option $sSelected value=\"$sClassName\">$sClassLabel</option>");
+					}
+					$oP->add('</select>');
+					$oP->add("&nbsp; <input type=\"submit\" value=\"".Dict::S('UI:Button:Apply')."\"></p>");
+					$oP->add('</form>');
+					$oP->add("</div>\n");
+				} else {
+					cmdbAbstractObject::DisplaySelectClassToCreate($sClass, $oP, $oAppContext,  $aPossibleClasses,$aCopyArgs);
 				}
-				$oP->add('<select name="class">');
-				asort($aPossibleClasses);
-				foreach($aPossibleClasses as $sClassName => $sClassLabel)
-				{
-					$sSelected = ($sClassName == $sClass) ? 'selected' : '';
-					$oP->add("<option $sSelected value=\"$sClassName\">$sClassLabel</option>");
-				}
-				$oP->add('</select>');
-				$oP->add("&nbsp; <input type=\"submit\" value=\"".Dict::S('UI:Button:Apply')."\"></p>");
-				$oP->add('</form>');
-				$oP->add("</div>\n");
 			}
 		break;
 	
