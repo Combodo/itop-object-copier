@@ -28,6 +28,20 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 {
 	static private $sCurrentTransactionId = "notransactions";
 
+	const XML_LEGACY_VERSION = '1.7';
+
+	/**
+	 * Compare static::XML_LEGACY_VERSION with ITOP_DESIGN_LATEST_VERSION and returns true if the later is <= to the former.
+	 * If static::XML_LEGACY_VERSION, return false
+	 *
+	 * @return bool
+	 *
+	 * @since 1.1.0
+	 */
+	private static function UseLegacy(){
+		return static::XML_LEGACY_VERSION !== '' ? (version_compare(ITOP_DESIGN_LATEST_VERSION, static::XML_LEGACY_VERSION, '<=') || ContextTag::Check('GUI:Portal')) : false;
+	}
+
 	/**
 	 * @param string $sCurrentTransactionId
 	 */
@@ -186,12 +200,14 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 									$aParams['rule'] = $iRule;
 									$aParams['source_id'] = $oObject->GetKey();
 									$aParams['source_class'] = get_class($oObject);
-									$aRet[] = new URLPopupMenuItem
-									(
-										'object_copier_'.$iRule,
-										self::FormatMessage($aRuleData, 'menu_label'),
-										utils::GetAbsoluteUrlModulePage('itop-object-copier', 'copy.php', $aParams)
-									);
+									if(static::UseLegacy())
+									{
+										$aRet[] = self::MakeLegacyMenuItem($iRule, $aRuleData, $aParams);
+									}
+									else
+									{
+										$aRet[] = self::MakeMenuItem($iRule, $aRuleData, $aParams);
+									}
 								}
 							}
 						}
@@ -204,6 +220,78 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			}
 		}
 		return $aRet;
+	}
+
+	/**
+	 * Create the menu item with icon and tooltip for iTop < 3.0.0
+	 * @param string|int $iRule
+	 * @param string[] $aRuleData
+	 * @params string[] $aParams
+	 * @return URLPopupMenuItem
+	 */
+	private static function MakeLegacyMenuItem($iRule, $aRuleData, $aParams)
+	{
+		$sIconTag = '';
+		if (array_key_exists('icon', $aRuleData))
+		{
+			$sIcon = $aRuleData['icon'];
+			if (strpos($sIcon, ' ') !== false && static::UseLegacy())
+			{
+				// "Non-Standard" icon name, let's use it as-is
+				$sIconTag = '<i class="'.$sIcon.'"></i> ';
+			}
+			else if (static::UseLegacy())
+			{
+				// "Standard" icon name, let's assume it's a FontAwesome 4 icon
+				$sIconTag = '<i class="fa fa-fw fa-'.$sIcon.'"></i> ';
+			}
+		}
+
+		$sMenuContent = $sIconTag.self::FormatMessage($aRuleData, 'menu_label');
+
+		self::FormatMessage($aRuleData, 'menu_tooltip');
+		$sLangCode = Dict::GetUserLanguage();
+		if (array_key_exists('menu_tooltip', $aRuleData) || array_key_exists('menu_tooltip/'.$sLangCode, $aRuleData))
+		{
+			$sMenuContent = '<span title="'.self::FormatMessage($aRuleData, 'menu_tooltip').'" data-toggle="tooltip">'.$sMenuContent.'</span>';
+		}
+
+		return new URLPopupMenuItem
+		(
+			'object_copier_'.$iRule,
+			$sMenuContent,
+			utils::GetAbsoluteUrlModulePage('itop-object-copier', 'copy.php', $aParams)
+		);
+	}
+
+	/**
+	 * Create the menu item with icon and tooltip for iTop >= 3.0.0
+	 * @param string|int $iRule
+	 * @param string[] $aRuleData
+	 * @params string[] $aParams
+	 * @return URLPopupMenuItem
+	 */
+	private static function MakeMenuItem($iRule, $aRuleData, $aParams)
+	{
+		$oButton = new URLButtonItem
+		(
+			'object_copier_'.$iRule,
+			self::FormatMessage($aRuleData, 'menu_label'),
+			utils::GetAbsoluteUrlModulePage('itop-object-copier', 'copy.php', $aParams)
+		);
+
+		if (array_key_exists('icon', $aRuleData))
+		{
+			$oButton->SetIconClass($aRuleData['icon']);
+		}
+
+		$sLangCode = Dict::GetUserLanguage();
+		if (array_key_exists('menu_tooltip', $aRuleData) || array_key_exists('menu_tooltip/'.$sLangCode, $aRuleData))
+		{
+			$oButton->SetTooltip(self::FormatMessage($aRuleData, 'menu_tooltip'));
+		}
+
+		return $oButton;
 	}
 
 	/**
@@ -654,7 +742,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	{
 		$sLangCode = Dict::GetUserLanguage();
 		$sCodeWithLang = $sMsgCode.'/'.$sLangCode;
-		if (isset($aRuleData[$sCodeWithLang]) && strlen($aRuleData[$sCodeWithLang]) > 0)
+		if (isset($aRuleData[$sCodeWithLang]))
 		{
 			if ($oSourceObject)
 			{
@@ -667,7 +755,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		}
 		else
 		{
-			if (isset($aRuleData[$sMsgCode]) && strlen($aRuleData[$sMsgCode]) > 0)
+			if (isset($aRuleData[$sMsgCode]))
 			{
 				$sDictEntry = $aRuleData[$sMsgCode];
 			}
