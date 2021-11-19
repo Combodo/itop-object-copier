@@ -1,11 +1,12 @@
 <?php
-/**
- * Localized data
+ /**
+ * Spanish Localized data
  *
- * @copyright   Copyright (C) 2013 XXXXX
+ * @copyright   Copyright (C) 2010-2021 Combodo SARL
  * @license     http://opensource.org/licenses/AGPL-3.0
+ * @traductor   Miguel Turrubiates <miguel_tf@yahoo.com> 
  */
-Dict::Add('ES CR', 'Spanish', 'Español, Castellaño', array(
+Dict::Add('ES CR', 'Spanish', 'Español, Castellano', array(
 	// Dictionary entries go here
 	'object-copier:menu_label:default' => 'Clonar...',
 	'object-copier:form_label:default' => 'Clonando %1$s',
