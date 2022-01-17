@@ -44,24 +44,19 @@ function ApplyNextAction(Webpage $oP, CMDBObject $oObj, $sNextAction)
 {
 	// Here handle the apply stimulus
 	$aTransitions = $oObj->EnumTransitions();
-	if (!isset($aTransitions[$sNextAction]))
-	{
+	if (!isset($aTransitions[$sNextAction])) {
 		// Invalid stimulus
 		throw new ApplicationException(Dict::Format('UI:Error:Invalid_Stimulus_On_Object_In_State', $sNextAction, $oObj->GetName(), $oObj->GetStateLabel()));
 	}
 	// Get the list of missing mandatory fields for the target state, considering only the changes from the previous form (i.e don't prompt twice)
-	$aExpectedAttributes = $oObj->GetExpectedAttributes($oObj->GetState(), $sNextAction, true /* $bOnlyNewOnes */);
-	
-	if (count($aExpectedAttributes) == 0)
-	{
+	$aExpectedAttributes = $oObj->GetTransitionAttributes($sNextAction, $oObj->GetState());
+	if (count($aExpectedAttributes) == 0) {
 		// If all the mandatory fields are already present, just apply the transition silently...
-		if ($oObj->ApplyStimulus($sNextAction))
-		{
+		if ($oObj->ApplyStimulus($sNextAction)) {
 			$oObj->DBUpdate();
 		}
 		ReloadAndDisplay($oP, $oObj);
-	}
-	else
+	} else
 	{
 		// redirect to the 'stimulus' action
 		$oAppContext = new ApplicationContext();

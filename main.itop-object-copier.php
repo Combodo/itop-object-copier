@@ -680,11 +680,10 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 						$oListAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sTargetListAttCode);
 						$oLnk = MetaModel::NewObject($oListAttDef->GetLinkedClass());
 						$oLnk->Set($oListAttDef->GetExtKeyToRemote(), $iObjKey);
-						if (isset($sRoleAttCode))
-						{
+						if (isset($sRoleAttCode)) {
 							$this->SetAtt($oLnk, $sRoleAttCode, $sRoleValue);
 						}
-						$oLinkSet->AddObject($oLnk);
+						$oLinkSet->AddItem($oLnk);
 						$this->SetAtt($oObjectToWrite, $sTargetListAttCode, $oLinkSet);
 					}
 				}
