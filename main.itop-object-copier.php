@@ -509,13 +509,14 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		if (is_object($oSourceAttDef) && $oSourceAttDef->IsLinkSet())
 		{
 			// The copy requires that we create a new object set (the semantic of DBObject::Set is unclear about link sets)
-			$oDestSet = DBObjectSet::FromScratch($oSourceAttDef->GetLinkedClass());
+			$oLinksSet = DBObjectSet::FromScratch($oSourceAttDef->GetLinkedClass());
+			$oDestSet = new ormLinkSet($oSourceAttDef->GetHostClass(), $sSourceAttCode, $oLinksSet);
 			$oSourceSet = $this->GetAtt($oSourceObject, $sSourceAttCode);
 			$oSourceSet->Rewind();
 			while ($oSourceLink = $oSourceSet->Fetch())
 			{
 				$oDestLink = $this->CloneObject($oSourceLink);
-				$oDestSet->AddObject($oDestLink);
+				$oDestSet->AddItem($oDestLink);
 			}
 			$this->SetAtt($oDestObject, $sDestAttCode, $oDestSet);
 		}
