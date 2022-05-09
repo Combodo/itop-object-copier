@@ -276,7 +276,7 @@ try
 						}
 					}
 					
-					if($oAttDef instanceof AttributeTagSet) {
+					if($oAttDef instanceof AttributeTagSet && $oObjToClone->Get($sAttCode) !== null) {
 					
 						/** @var \ormTagSet $oSet Tag set */
 						$oSet = $oObjToClone->Get($sAttCode);
