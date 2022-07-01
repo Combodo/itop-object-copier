@@ -159,6 +159,22 @@ SetupWebPage::AddModule(
 					'retrofit' =>
 						array(),
 				),
+				'MailInboxStandardToMailInboxOAuth' => array(
+					'source_scope' => 'SELECT MailInboxStandard WHERE finalclass = "MailInboxStandard"',
+					'allowed_profiles' => 'Administrator',
+					'menu_label' => 'Create OAuth 2.0 Mail Inbox...',
+					'menu_label/FR FR' => 'Créer une Boite mail OAuth 2.0...',
+					'form_label' => 'Create new OAuth 2.0 Mail Inbox from %1$s',
+					'form_label/FR FR' => 'Nouvelle Boite mail OAuth 2.0 depuis %1$s',
+					'report_label' => 'Created from %1$s',
+					'report_label/FR FR' => 'Créée depuis %1$s',
+					'dest_class' => 'MailInboxOAuth',
+					'preset' => array(
+						0 => 'clone(server, mailbox,login,port,behavior, target_class, ticket_default_values, ticket_default_title, title_pattern,unknown_caller_behavior,unknown_caller_rejection_reply,caller_default_values,error_behavior, notify_errors_to, notify_errors_from,trace,email_storage,target_folder,import_additional_contacts,stimuli )',
+						1 => 'set(active,no)',
+					),
+					'retrofit' => array(),
+				),
 			)
 		),
 	)
