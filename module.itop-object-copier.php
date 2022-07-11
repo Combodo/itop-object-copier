@@ -5,17 +5,17 @@
 
 SetupWebPage::AddModule(
 	__FILE__, // Path to the current file, all other file names are relative to the directory containing this file
-	'itop-object-copier/1.4.3-dev',
-	array(
-		// Identification
-		//
-		'label'        => 'Object copier',
-		'category'     => 'tooling',
+    'itop-object-copier/1.4.3',
+    array(
+        // Identification
+        //
+        'label' => 'Object copier',
+        'category' => 'tooling',
 
-		// Setup
-		//
-		'dependencies' => array(),
-		'mandatory'    => false,
+        // Setup
+        //
+        'dependencies' => array(),
+        'mandatory' => false,
 		'visible' => true,
 
 		// Components
