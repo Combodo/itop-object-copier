@@ -125,7 +125,7 @@ try
 		case 'new': // Form to create a new object
 		case 'apply_new': // Creation of a new object
 			if (version_compare(ITOP_DESIGN_LATEST_VERSION, '3.2', '<')) { // N°7251 iTop 3.2.0 deprecated lib
-				$oP->add_linked_script("../js/json.js");
+			$oP->add_linked_script("../js/json.js");
 			}
 			$oP->add_linked_script("../js/forms-json-utils.js");
 			$oP->add_linked_script("../js/wizardhelper.js");
@@ -357,8 +357,8 @@ EOF
 					cmdbAbstractObject::DisplaySelectClassToCreate($sClass, $oP, $oAppContext,  $aPossibleClasses,$aCopyArgs);
 				}
 			}
-		break;
-	
+			break;
+
 		///////////////////////////////////////////////////////////////////////////////////////////
 
 		case 'apply_new': // Creation of a new object
@@ -490,12 +490,25 @@ EOF
 						$oP->add("<h1>".MetaModel::GetClassIcon($sClass)."&nbsp;".Dict::Format('UI:CreationTitle_Class', $sClassLabel)."</h1>\n");
 						$oP->add("<div class=\"wizContainer\">\n");
 					}
-					cmdbAbstractObject::DisplayCreationForm($oP, $sClass, $oObj);
+
+					$sIssueDesc = Dict::Format('UI:ObjectCouldNotBeWritten', implode(', ', $aIssues));
+					$oP->AddHeaderMessage($sIssueDesc, 'message_error');
+
+					$aCopyArgs = [];
+					$aCopyArgs['exec_module'] = utils::ReadParam('exec_module', null, false, 'raw_data');
+					$aCopyArgs['exec_page'] = utils::ReadParam('exec_page', null, false, 'raw_data');
+					$aCopyArgs['exec_env'] = utils::ReadParam('exec_env', utils::GetCurrentEnvironment());
+					$aCopyArgs['rule'] = utils::ReadPostedParam('rule', '');
+					$aCopyArgs['source_id'] = utils::ReadPostedParam('source_id', '');
+					$aCopyArgs['source_class'] = utils::ReadPostedParam('source_class', '');
+					$aCopyArgs['action'] = utils::ReadPostedParam('action', null, false, 'raw_data');
+					cmdbAbstractObject::DisplayCreationForm($oP, $sClass, $oObj, [], $aCopyArgs);
+
 					if (version_compare(ITOP_DESIGN_LATEST_VERSION , '3.0') < 0) {
 						$oP->add("</div>\n");
 					}
-					$sIssueDesc = Dict::Format('UI:ObjectCouldNotBeWritten', implode(', ', $aIssues));
-					$oP->add_ready_script("alert('".addslashes($sIssueDesc)."');");
+				$sIssueDesc = Dict::Format('UI:ObjectCouldNotBeWritten', implode(', ', $aIssues));
+				$oP->add_ready_script("alert('".addslashes($sIssueDesc)."');");
 				}
 			}
 			break;
@@ -535,8 +548,8 @@ catch(CoreException $e)
 	else
 	{
 		$oP->add("<h1>".Dict::S('UI:FatalErrorMessage')."</h1>\n");
-	}	
-	$oP->error(Dict::Format('UI:Error_Details', $e->getHtmlDesc()));	
+	}
+	$oP->error(Dict::Format('UI:Error_Details', $e->getHtmlDesc()));
 	$oP->output();
 
 	if (MetaModel::IsLogEnabledIssue())
@@ -546,7 +559,7 @@ catch(CoreException $e)
 			try
 			{
 				$oLog = new EventIssue();
-	
+
 				$oLog->Set('message', $e->getMessage());
 				$oLog->Set('userinfo', '');
 				$oLog->Set('issue', $e->GetIssue());
@@ -571,8 +584,8 @@ catch(Exception $e)
 {
 	require_once(APPROOT.'/setup/setuppage.class.inc.php');
 	$oP = new SetupPage(Dict::S('UI:PageTitle:FatalError'));
-	$oP->add("<h1>".Dict::S('UI:FatalErrorMessage')."</h1>\n");	
-	$oP->error(Dict::Format('UI:Error_Details', $e->getMessage()));	
+	$oP->add("<h1>".Dict::S('UI:FatalErrorMessage')."</h1>\n");
+	$oP->error(Dict::Format('UI:Error_Details', $e->getMessage()));
 	$oP->output();
 
 	if (MetaModel::IsLogEnabledIssue())
@@ -582,7 +595,7 @@ catch(Exception $e)
 			try
 			{
 				$oLog = new EventIssue();
-	
+
 				$oLog->Set('message', $e->getMessage());
 				$oLog->Set('userinfo', '');
 				$oLog->Set('issue', 'PHP Exception');
