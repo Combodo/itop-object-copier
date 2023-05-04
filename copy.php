@@ -20,7 +20,7 @@
 /**
  * GUI for the itop-object-copier module
  * - operation=new to show the form to create an object
- * - operation=create to execute the operation  
+ * - operation=create to execute the operation
  *
  * @copyright   Copyright (C) 2014-2018 Combodo SARL
  * @license     http://opensource.org/licenses/AGPL-3.0
@@ -61,7 +61,7 @@ function ApplyNextAction(Webpage $oP, CMDBObject $oObj, $sNextAction)
 		// redirect to the 'stimulus' action
 		$oAppContext = new ApplicationContext();
 		//echo "<p>Missing Attributes <pre>".print_r($aExpectedAttributes, true)."</pre></p>\n";
-		
+
 		$oP->add_header('Location: '.utils::GetAbsoluteUrlAppRoot().'pages/UI.php?operation=stimulus&class='.get_class($oObj).'&stimulus='.$sNextAction.'&id='.$oObj->getKey().'&'.$oAppContext->GetForLink());
 	}
 }
@@ -78,7 +78,7 @@ function ReloadAndDisplay($oPage, $oObj, $sMessageId = '', $sMessage = '', $sSev
 
 
 /***********************************************************************************
- * 
+ *
  * Main user interface page, starts here
  *
  * ***********************************************************************************/
@@ -124,17 +124,17 @@ try
 	{
 		case 'new': // Form to create a new object
 		case 'apply_new': // Creation of a new object
-		$oP->add_linked_script("../js/json.js");
-		$oP->add_linked_script("../js/forms-json-utils.js");
-		$oP->add_linked_script("../js/wizardhelper.js");
-		$oP->add_linked_script("../js/wizard.utils.js");
-		$oP->add_linked_script("../js/linkswidget.js");
-		$oP->add_linked_script("../js/linksdirectwidget.js");
-		$oP->add_linked_script("../js/extkeywidget.js");
-		$oP->add_linked_script("../js/jquery.blockUI.js");
-		break;		
+			$oP->add_linked_script("../js/json.js");
+			$oP->add_linked_script("../js/forms-json-utils.js");
+			$oP->add_linked_script("../js/wizardhelper.js");
+			$oP->add_linked_script("../js/wizard.utils.js");
+			$oP->add_linked_script("../js/linkswidget.js");
+			$oP->add_linked_script("../js/linksdirectwidget.js");
+			$oP->add_linked_script("../js/extkeywidget.js");
+			$oP->add_linked_script("../js/jquery.blockUI.js");
+			break;
 	}
-		
+
 	switch($operation)
 	{
 		case 'new': // Form to create a new object
@@ -355,152 +355,171 @@ EOF
 					cmdbAbstractObject::DisplaySelectClassToCreate($sClass, $oP, $oAppContext,  $aPossibleClasses,$aCopyArgs);
 				}
 			}
-		break;
-	
+			break;
+
 		///////////////////////////////////////////////////////////////////////////////////////////
 
 		case 'apply_new': // Creation of a new object
-		// Specific to itop-object-copier
-		$iRule = utils::ReadParam('rule', -1);
-		$iSourceId = utils::ReadParam('source_id', -1);
-		$sSourceClass = utils::ReadParam('source_class', '');
-		$oSourceObject = MetaModel::GetObject($sSourceClass, $iSourceId);
-		$aRules = MetaModel::GetModuleSetting('itop-object-copier', 'rules', array());
-		if (!isset($aRules[$iRule]))
-		{
-			throw new ApplicationException('Wrong rule id: '.$iRule);
-		}
-		$aRuleData = $aRules[$iRule];
+			// Specific to itop-object-copier
+			$iRule = utils::ReadParam('rule', -1);
+			$iSourceId = utils::ReadParam('source_id', -1);
+			$sSourceClass = utils::ReadParam('source_class', '');
+			$oSourceObject = MetaModel::GetObject($sSourceClass, $iSourceId);
+			$aRules = MetaModel::GetModuleSetting('itop-object-copier', 'rules', array());
+			if (!isset($aRules[$iRule]))
+			{
+				throw new ApplicationException('Wrong rule id: '.$iRule);
+			}
+			$aRuleData = $aRules[$iRule];
 
-		$sClass = utils::ReadPostedParam('class', '', 'class');
-		$sClassLabel = MetaModel::GetName($sClass);
-			$sTransactionId = utils::ReadPostedParam('transaction_id', '', 'transaction_id');
-		if ( empty($sClass) ) // TO DO: check that the class name is valid !
-		{
-			throw new ApplicationException(Dict::Format('UI:Error:1ParametersMissing', 'class'));
-		}
-		if (!utils::IsTransactionValid($sTransactionId, false))
-		{
-			if (version_compare(ITOP_DESIGN_LATEST_VERSION , '3.0') < 0) {
-				$oP->p("<strong>".Dict::S('UI:Error:ObjectAlreadyCreated')."</strong>\n");
-			} else {
-				$oAlert= AlertUIBlockFactory::MakeForFailure(Dict::S('UI:Error:ObjectAlreadyCreated'));
-				$oAlert->SetIsCollapsible(false);
-				$oP->AddSubBlock($oAlert);
-			}
-		}
-		else
-		{
-			$oObj = MetaModel::NewObject($sClass);
-			try
-			{
-				// Do not write attributes that will be updated with posted data (conflict with case logs)
-				iTopObjectCopier::PrepareObject($aRuleData, $oObj, $oSourceObject, true);
-			}
-			catch (Exception $e)
-			{
-				iTopObjectCopier::LogError($iRule, 'preset - '.$e->getMessage());
-			}
-			$sStateAttCode = MetaModel::GetStateAttributeCode($sClass);
-			if (!empty($sStateAttCode))
-			{
-				$sTargetState = utils::ReadPostedParam('obj_state', '');
-				if ($sTargetState != '')
-				{
-					$oObj->Set($sStateAttCode, $sTargetState);
-				}
-			}
-			$oObj->UpdateObjectFromPostedForm();
-		}
-		if (isset($oObj) && is_object($oObj))
-		{
-			$sClass = get_class($oObj);
+			$sClass = utils::ReadPostedParam('class', '', 'class');
 			$sClassLabel = MetaModel::GetName($sClass);
-
-			list($bRes, $aIssues) = $oObj->CheckToWrite();
-			if ($bRes)
+			$sTransactionId = utils::ReadPostedParam('transaction_id', '', 'transaction_id');
+			if ( empty($sClass) ) // TO DO: check that the class name is valid !
 			{
-				$oObj->DBInsert();
-
-				// Specific to itop-object-copier
-				// Note: must be done when the id is known
-				try
-				{
-					$oSourceObject = MetaModel::GetObject($sSourceClass, $iSourceId);
-					iTopObjectCopier::RetrofitOnSourceObject($aRuleData, $oObj, $oSourceObject);
-					$oSourceObject->DBUpdate();
-
-					$sMessage = iTopObjectCopier::FormatMessage($aRuleData, 'report_label', $oSourceObject);
-					cmdbAbstractObject::SetSessionMessage(get_class($oObj), $oObj->GetKey(), 'object-copier', $sMessage, 'info', 0, true /* must not exist */);
-				}
-				catch (Exception $e)
-				{
-					iTopObjectCopier::LogError($iRule, 'retrofit - '.$e->getMessage());
-					$sMessage = Dict::Format('object-copier:error:retrofit', $e->getMessage());
-					cmdbAbstractObject::SetSessionMessage(get_class($oObj), $oObj->GetKey(), 'object-copier', $sMessage, 'error', 0, true /* must not exist */);
-				}
-
-				utils::RemoveTransaction($sTransactionId);
-				$oP->set_title(Dict::S('UI:PageTitle:ObjectCreated'));
-				$sMessage = Dict::Format('UI:Title:Object_Of_Class_Created', $oObj->GetName(), $sClassLabel);
-				
-				$oObj = MetaModel::GetObject(get_class($oObj), $oObj->GetKey()); //Workaround: reload the object so that the linkedset are displayed properly
-
-				$sNextAction = utils::ReadPostedParam('next_action', '');
-				if (!empty($sNextAction))
-				{
-					$oP->add("<h1>$sMessage</h1>");
-					/** @var \CMDBObject $oObj */
-					ApplyNextAction($oP, $oObj, $sNextAction);
-				}
-				else
-				{
-					// Nothing more to do
-					ReloadAndDisplay($oP, $oObj, 'create', $sMessage, 'ok');
+				throw new ApplicationException(Dict::Format('UI:Error:1ParametersMissing', 'class'));
+			}
+			if (!utils::IsTransactionValid($sTransactionId, false))
+			{
+				if (version_compare(ITOP_DESIGN_LATEST_VERSION , '3.0') < 0) {
+					$oP->p("<strong>".Dict::S('UI:Error:ObjectAlreadyCreated')."</strong>\n");
+				} else {
+					$oAlert= AlertUIBlockFactory::MakeForFailure(Dict::S('UI:Error:ObjectAlreadyCreated'));
+					$oAlert->SetIsCollapsible(false);
+					$oP->AddSubBlock($oAlert);
 				}
 			}
 			else
 			{
-				// Found issues, explain and give the user a second chance
-				//
-				if (version_compare(ITOP_DESIGN_LATEST_VERSION , '3.0') < 0) {
-					$oP->set_title(Dict::Format('UI:CreationPageTitle_Class', $sClassLabel));
-					$oP->add("<h1>".MetaModel::GetClassIcon($sClass)."&nbsp;".Dict::Format('UI:CreationTitle_Class', $sClassLabel)."</h1>\n");
-					$oP->add("<div class=\"wizContainer\">\n");
+				$oObj = MetaModel::NewObject($sClass);
+				try
+				{
+					// Do not write attributes that will be updated with posted data (conflict with case logs)
+					iTopObjectCopier::PrepareObject($aRuleData, $oObj, $oSourceObject, true);
 				}
+				catch (Exception $e)
+				{
+					iTopObjectCopier::LogError($iRule, 'preset - '.$e->getMessage());
+				}
+				$sStateAttCode = MetaModel::GetStateAttributeCode($sClass);
+				if (!empty($sStateAttCode))
+				{
+					$sTargetState = utils::ReadPostedParam('obj_state', '');
+					if ($sTargetState != '')
+					{
+						$oObj->Set($sStateAttCode, $sTargetState);
+					}
+				}
+				$oObj->UpdateObjectFromPostedForm();
+			}
+			if (isset($oObj) && is_object($oObj))
+			{
+				$sClass = get_class($oObj);
+				$sClassLabel = MetaModel::GetName($sClass);
+
+				$sStateAttCode = MetaModel::GetStateAttributeCode($sClass);
+				$bRes = true;
+				if (!empty($sStateAttCode))
+				{
+					$sTargetState = utils::ReadPostedParam('obj_state', '');
+					if ($sTargetState != '')
+					{
+						$sOrigState = utils::ReadPostedParam('obj_state_orig', '');
+						if ($sTargetState != $sOrigState)
+						{
+							$aIssues[] = Dict::S('UI:StateChanged');
+							$bRes = false;
+						}
+						$oObj->Set($sStateAttCode, $sTargetState);
+					}
+				}
+				if($bRes)
+				{
+					list($bRes, $aIssues) = $oObj->CheckToWrite();
+				}
+				if ($bRes)
+				{
+					$oObj->DBInsert();
+
+					// Specific to itop-object-copier
+					// Note: must be done when the id is known
+					try
+					{
+						$oSourceObject = MetaModel::GetObject($sSourceClass, $iSourceId);
+						iTopObjectCopier::RetrofitOnSourceObject($aRuleData, $oObj, $oSourceObject);
+						$oSourceObject->DBUpdate();
+
+						$sMessage = iTopObjectCopier::FormatMessage($aRuleData, 'report_label', $oSourceObject);
+						cmdbAbstractObject::SetSessionMessage(get_class($oObj), $oObj->GetKey(), 'object-copier', $sMessage, 'info', 0, true /* must not exist */);
+					}
+					catch (Exception $e)
+					{
+						iTopObjectCopier::LogError($iRule, 'retrofit - '.$e->getMessage());
+						$sMessage = Dict::Format('object-copier:error:retrofit', $e->getMessage());
+						cmdbAbstractObject::SetSessionMessage(get_class($oObj), $oObj->GetKey(), 'object-copier', $sMessage, 'error', 0, true /* must not exist */);
+					}
+
+					utils::RemoveTransaction($sTransactionId);
+					$oP->set_title(Dict::S('UI:PageTitle:ObjectCreated'));
+					$sMessage = Dict::Format('UI:Title:Object_Of_Class_Created', $oObj->GetName(), $sClassLabel);
+
+					$oObj = MetaModel::GetObject(get_class($oObj), $oObj->GetKey()); //Workaround: reload the object so that the linkedset are displayed properly
+
+					$sNextAction = utils::ReadPostedParam('next_action', '');
+					if (!empty($sNextAction))
+					{
+						$oP->add("<h1>$sMessage</h1>");
+						/** @var \CMDBObject $oObj */
+						ApplyNextAction($oP, $oObj, $sNextAction);
+					}
+					else
+					{
+						// Nothing more to do
+						ReloadAndDisplay($oP, $oObj, 'create', $sMessage, 'ok');
+					}
+				}
+				else
+				{
+					// Found issues, explain and give the user a second chance
+					//
+					if (version_compare(ITOP_DESIGN_LATEST_VERSION , '3.0') < 0) {
+						$oP->set_title(Dict::Format('UI:CreationPageTitle_Class', $sClassLabel));
+						$oP->add("<h1>".MetaModel::GetClassIcon($sClass)."&nbsp;".Dict::Format('UI:CreationTitle_Class', $sClassLabel)."</h1>\n");
+						$oP->add("<div class=\"wizContainer\">\n");
+					}
 				cmdbAbstractObject::DisplayCreationForm($oP, $sClass, $oObj);
-				if (version_compare(ITOP_DESIGN_LATEST_VERSION , '3.0') < 0) {
-					$oP->add("</div>\n");
-				}
+					if (version_compare(ITOP_DESIGN_LATEST_VERSION , '3.0') < 0) {
+						$oP->add("</div>\n");
+					}
 				$sIssueDesc = Dict::Format('UI:ObjectCouldNotBeWritten', implode(', ', $aIssues));
 				$oP->add_ready_script("alert('".addslashes($sIssueDesc)."');");
+				}
 			}
-		}
-		break;
-			
+			break;
+
 		///////////////////////////////////////////////////////////////////////////////////////////
 
 		case 'cancel': // An action was cancelled
-		$oP->set_title(Dict::S('UI:OperationCancelled'));
-		$oP->add('<h1>'.Dict::S('UI:OperationCancelled').'</h1>');
-		break;
-	
+			$oP->set_title(Dict::S('UI:OperationCancelled'));
+			$oP->add('<h1>'.Dict::S('UI:OperationCancelled').'</h1>');
+			break;
+
 		///////////////////////////////////////////////////////////////////////////////////////////
 
 		default: // Menu node rendering (templates)
-		ApplicationMenu::LoadAdditionalMenus();
-		$oMenuNode = ApplicationMenu::GetMenuNode(ApplicationMenu::GetMenuIndexById(ApplicationMenu::GetActiveNodeId()));
-		if (is_object($oMenuNode))
-		{
-		
-			$oMenuNode->RenderContent($oP, $oAppContext->GetAsHash());
-			$oP->set_title($oMenuNode->GetLabel());
-		}
-		
+			ApplicationMenu::LoadAdditionalMenus();
+			$oMenuNode = ApplicationMenu::GetMenuNode(ApplicationMenu::GetMenuIndexById(ApplicationMenu::GetActiveNodeId()));
+			if (is_object($oMenuNode))
+			{
+
+				$oMenuNode->RenderContent($oP, $oAppContext->GetAsHash());
+				$oP->set_title($oMenuNode->GetLabel());
+			}
+
 		///////////////////////////////////////////////////////////////////////////////////////////
 
 	}
-	$oP->output();	
+	$oP->output();
 }
 catch(CoreException $e)
 {
@@ -513,8 +532,8 @@ catch(CoreException $e)
 	else
 	{
 		$oP->add("<h1>".Dict::S('UI:FatalErrorMessage')."</h1>\n");
-	}	
-	$oP->error(Dict::Format('UI:Error_Details', $e->getHtmlDesc()));	
+	}
+	$oP->error(Dict::Format('UI:Error_Details', $e->getHtmlDesc()));
 	$oP->output();
 
 	if (MetaModel::IsLogEnabledIssue())
@@ -524,7 +543,7 @@ catch(CoreException $e)
 			try
 			{
 				$oLog = new EventIssue();
-	
+
 				$oLog->Set('message', $e->getMessage());
 				$oLog->Set('userinfo', '');
 				$oLog->Set('issue', $e->GetIssue());
@@ -549,8 +568,8 @@ catch(Exception $e)
 {
 	require_once(APPROOT.'/setup/setuppage.class.inc.php');
 	$oP = new SetupPage(Dict::S('UI:PageTitle:FatalError'));
-	$oP->add("<h1>".Dict::S('UI:FatalErrorMessage')."</h1>\n");	
-	$oP->error(Dict::Format('UI:Error_Details', $e->getMessage()));	
+	$oP->add("<h1>".Dict::S('UI:FatalErrorMessage')."</h1>\n");
+	$oP->error(Dict::Format('UI:Error_Details', $e->getMessage()));
 	$oP->output();
 
 	if (MetaModel::IsLogEnabledIssue())
@@ -560,7 +579,7 @@ catch(Exception $e)
 			try
 			{
 				$oLog = new EventIssue();
-	
+
 				$oLog->Set('message', $e->getMessage());
 				$oLog->Set('userinfo', '');
 				$oLog->Set('issue', 'PHP Exception');
