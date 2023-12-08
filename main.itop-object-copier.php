@@ -3,7 +3,7 @@
 //
 //   This file is part of iTop.
 //
-//   iTop is free software; you can redistribute it and/or modify	
+//   iTop is free software; you can redistribute it and/or modify
 //   it under the terms of the GNU Affero General Public License as published by
 //   the Free Software Foundation, either version 3 of the License, or
 //   (at your option) any later version.
@@ -58,7 +58,28 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	 */
 	static public function LogError($iRule, $sMessage)
 	{
-		IssueLog::Error('Module itop-object-copy - invalid rule #'.$iRule.' - '.$sMessage);
+		IssueLog::Error(self::GetLogMessage($iRule, $sMessage));
+	}
+
+	/**
+	 * Helper to log errors
+	 *
+	 * @param int $iRule
+	 * @param string $sMessage
+	 */
+	static public function LogWarning($iRule, $sMessage)
+	{
+		IssueLog::Warning(self::GetLogMessage($iRule, $sMessage));
+	}
+
+	/**
+	 * @param $iRule
+	 * @param $sMessage
+	 *
+	 * @return string
+	 */
+	static private function GetLogMessage($iRule, $sMessage){
+		return 'Module itop-object-copy - invalid rule #'.$iRule.' - '.$sMessage;
 	}
 
 	/**
@@ -110,7 +131,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		}
 		if (($aRuleData['dest_class'] != '') && !MetaModel::IsValidClass($aRuleData['dest_class']))
 		{
-			self::LogError($iRule, 'dest_class "'.$aRuleData['dest_class'].'" is not a valid class');
+			self::LogWarning($iRule, 'dest_class "'.$aRuleData['dest_class'].'" is not a valid class');
 			$bRet = false;
 		}
 		return $bRet;
@@ -790,7 +811,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 	private function ShouldUpdateAttribute(cmdbAbstractObject $oObjectToWrite, $bOnFormSubmit, $sAttCode, $sVerb ='')
 	{
 		$oAttDef = MetaModel::GetAttributeDef(get_class($oObjectToWrite), $sAttCode);
-		
+
 		// Do not override value on form submission unless it's a caselog or a direct linkset as they work in forms with deltas
 		$bUpdate = true;
 		if ($bOnFormSubmit && !($oAttDef instanceof AttributeCaseLog) && !($oAttDef->IsLinkSet() && !$oAttDef->IsIndirect())
