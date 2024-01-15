@@ -418,10 +418,12 @@ EOF
 			{
 				$sClass = get_class($oObj);
 				$sClassLabel = MetaModel::GetName($sClass);
+				$bCheckCurrentState = true;
+				$bCheckStatus = true;
 
+				//same code as in Combodo\iTop\Controller\Base\Layout\ObjectController::OperationApplyNew
 				$sStateAttCode = MetaModel::GetStateAttributeCode($sClass);
-				$bRes = true;
-				if (!empty($sStateAttCode))
+				if (!empty($sStateAttCode)) //	if (MetaModel::HasLifecycle($sClass)) - since iTop3.0
 				{
 					$sTargetState = utils::ReadPostedParam('obj_state', '');
 					if ($sTargetState != '')
@@ -430,16 +432,15 @@ EOF
 						if ($sTargetState != $sOrigState)
 						{
 							$aIssues[] = Dict::S('UI:StateChanged');
-							$bRes = false;
+							$bCheckCurrentState = false;
 						}
 						$oObj->Set($sStateAttCode, $sTargetState);
 					}
 				}
-				if($bRes)
-				{
-					list($bRes, $aIssues) = $oObj->CheckToWrite();
+				if($bCheckCurrentState) {
+					list($bCheckStatus, $aIssues) = $oObj->CheckToWrite();
 				}
-				if ($bRes)
+				if ($bCheckStatus && $bCheckCurrentState)
 				{
 					$oObj->DBInsert();
 
@@ -489,12 +490,12 @@ EOF
 						$oP->add("<h1>".MetaModel::GetClassIcon($sClass)."&nbsp;".Dict::Format('UI:CreationTitle_Class', $sClassLabel)."</h1>\n");
 						$oP->add("<div class=\"wizContainer\">\n");
 					}
-				cmdbAbstractObject::DisplayCreationForm($oP, $sClass, $oObj);
+					cmdbAbstractObject::DisplayCreationForm($oP, $sClass, $oObj);
 					if (version_compare(ITOP_DESIGN_LATEST_VERSION , '3.0') < 0) {
 						$oP->add("</div>\n");
 					}
-				$sIssueDesc = Dict::Format('UI:ObjectCouldNotBeWritten', implode(', ', $aIssues));
-				$oP->add_ready_script("alert('".addslashes($sIssueDesc)."');");
+					$sIssueDesc = Dict::Format('UI:ObjectCouldNotBeWritten', implode(', ', $aIssues));
+					$oP->add_ready_script("alert('".addslashes($sIssueDesc)."');");
 				}
 			}
 			break;
