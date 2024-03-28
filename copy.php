@@ -125,15 +125,23 @@ try
 		case 'new': // Form to create a new object
 		case 'apply_new': // Creation of a new object
 			if (version_compare(ITOP_DESIGN_LATEST_VERSION, '3.2', '<')) { // N°7251 iTop 3.2.0 deprecated lib
-			$oP->add_linked_script("../js/json.js");
+				$oP->add_linked_script("../js/json.js");
+				$oP->add_linked_script("../js/forms-json-utils.js");
+				$oP->add_linked_script("../js/wizardhelper.js");
+				$oP->add_linked_script("../js/wizard.utils.js");
+				$oP->add_linked_script("../js/linkswidget.js");
+				$oP->add_linked_script("../js/linksdirectwidget.js");
+				$oP->add_linked_script("../js/extkeywidget.js");
+				$oP->add_linked_script("../js/jquery.blockUI.js");
+			} else {
+				$oP->LinkScriptFromAppRoot("js/forms-json-utils.js");
+				$oP->LinkScriptFromAppRoot("js/wizardhelper.js");
+				$oP->LinkScriptFromAppRoot("js/wizard.utils.js");
+				$oP->LinkScriptFromAppRoot("js/linkswidget.js");
+				$oP->LinkScriptFromAppRoot("js/linksdirectwidget.js");
+				$oP->LinkScriptFromAppRoot("js/extkeywidget.js");
+				$oP->LinkScriptFromAppRoot("js/jquery.blockUI.js");
 			}
-			$oP->add_linked_script("../js/forms-json-utils.js");
-			$oP->add_linked_script("../js/wizardhelper.js");
-			$oP->add_linked_script("../js/wizard.utils.js");
-			$oP->add_linked_script("../js/linkswidget.js");
-			$oP->add_linked_script("../js/linksdirectwidget.js");
-			$oP->add_linked_script("../js/extkeywidget.js");
-			$oP->add_linked_script("../js/jquery.blockUI.js");
 			break;
 	}
 		
