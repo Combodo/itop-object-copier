@@ -124,7 +124,7 @@ try
 	{
 		case 'new': // Form to create a new object
 		case 'apply_new': // Creation of a new object
-			if (version_compare(ITOP_DESIGN_LATEST_VERSION, '3.2', '<')) { // N°7251 iTop 3.2.0 deprecated lib
+			if (version_compare(ITOP_DESIGN_LATEST_VERSION, 3.2, '<')) { // N°7251 iTop 3.2.0 deprecated lib
 				$oP->add_linked_script("../js/json.js");
 				$oP->add_linked_script("../js/forms-json-utils.js");
 				$oP->add_linked_script("../js/wizardhelper.js");
@@ -424,10 +424,11 @@ EOF
 			}
 			if (isset($oObj) && is_object($oObj))
 			{
+                $aIssues = [];
 				$sClass = get_class($oObj);
 				$sClassLabel = MetaModel::GetName($sClass);
 				$bCheckCurrentState = true;
-				$bCheckStatus = true;
+                $bSaveOK = true;
 
 				//same code as in Combodo\iTop\Controller\Base\Layout\ObjectController::OperationApplyNew
 				$sStateAttCode = MetaModel::GetStateAttributeCode($sClass);
@@ -439,85 +440,81 @@ EOF
 						$sOrigState = utils::ReadPostedParam('obj_state_orig', '');
 						if ($sTargetState != $sOrigState)
 						{
-							$aIssues[] = Dict::S('UI:StateChanged');
+                            $oP->AddHeaderMessage( Dict::S('UI:StateChanged'), 'message_warning');
 							$bCheckCurrentState = false;
 						}
 						$oObj->Set($sStateAttCode, $sTargetState);
 					}
 				}
-				if($bCheckCurrentState) {
-					list($bCheckStatus, $aIssues) = $oObj->CheckToWrite();
-				}
-				if ($bCheckStatus && $bCheckCurrentState)
-				{
-					$oObj->DBInsert();
+                if ($bCheckCurrentState) {
+	                try {
+		                $oObj->DBInsertNoReload();
+	                }
+	                catch (CoreCannotSaveObjectException $e) {
+		                $bSaveOK = false;
+		                $aIssues[] = $e->getMessage();
+	                }
+					if ($bSaveOK) {
+						// Specific to itop-object-copier
+						// Note: must be done when the id is known
+						try {
+							$oSourceObject = MetaModel::GetObject($sSourceClass, $iSourceId);
+							iTopObjectCopier::RetrofitOnSourceObject($aRuleData, $oObj, $oSourceObject);
+							$oSourceObject->DBUpdate();
 
-					// Specific to itop-object-copier
-					// Note: must be done when the id is known
-					try
-					{
-						$oSourceObject = MetaModel::GetObject($sSourceClass, $iSourceId);
-						iTopObjectCopier::RetrofitOnSourceObject($aRuleData, $oObj, $oSourceObject);
-						$oSourceObject->DBUpdate();
+							$sMessage = iTopObjectCopier::FormatMessage($aRuleData, 'report_label', $oSourceObject);
+							cmdbAbstractObject::SetSessionMessage(get_class($oObj), $oObj->GetKey(), 'object-copier', $sMessage, 'info', 0, true /* must not exist */);
+						}
+						catch (Exception $e) {
+							iTopObjectCopier::LogError($iRule, 'retrofit - '.$e->getMessage());
+							$sMessage = Dict::Format('object-copier:error:retrofit', $e->getMessage());
+							cmdbAbstractObject::SetSessionMessage(get_class($oObj), $oObj->GetKey(), 'object-copier', $sMessage, 'error', 0, true /* must not exist */);
+						}
 
-						$sMessage = iTopObjectCopier::FormatMessage($aRuleData, 'report_label', $oSourceObject);
-						cmdbAbstractObject::SetSessionMessage(get_class($oObj), $oObj->GetKey(), 'object-copier', $sMessage, 'info', 0, true /* must not exist */);
+						utils::RemoveTransaction($sTransactionId);
+						$oP->set_title(Dict::S('UI:PageTitle:ObjectCreated'));
+						$sMessage = Dict::Format('UI:Title:Object_Of_Class_Created', $oObj->GetName(), $sClassLabel);
+
+						$oObj = MetaModel::GetObject(get_class($oObj), $oObj->GetKey()); //Workaround: reload the object so that the linkedset are displayed properly
+
+						$sNextAction = utils::ReadPostedParam('next_action', '');
+						if (!empty($sNextAction)) {
+							$oP->add("<h1>$sMessage</h1>");
+							/** @var \CMDBObject $oObj */
+							ApplyNextAction($oP, $oObj, $sNextAction);
+						} else {
+							// Nothing more to do
+							ReloadAndDisplay($oP, $oObj, 'create', $sMessage, 'ok');
+						}
 					}
-					catch (Exception $e)
-					{
-						iTopObjectCopier::LogError($iRule, 'retrofit - '.$e->getMessage());
-						$sMessage = Dict::Format('object-copier:error:retrofit', $e->getMessage());
-						cmdbAbstractObject::SetSessionMessage(get_class($oObj), $oObj->GetKey(), 'object-copier', $sMessage, 'error', 0, true /* must not exist */);
-					}
+                }
 
-					utils::RemoveTransaction($sTransactionId);
-					$oP->set_title(Dict::S('UI:PageTitle:ObjectCreated'));
-					$sMessage = Dict::Format('UI:Title:Object_Of_Class_Created', $oObj->GetName(), $sClassLabel);
+                if ($bCheckCurrentState === false || $bSaveOK === false) {
+                    // Found issues, explain and give the user a second chance
+                    if (version_compare(ITOP_DESIGN_LATEST_VERSION, '3.0') < 0) {
+                        $oP->set_title(Dict::Format('UI:CreationPageTitle_Class', $sClassLabel));
+                        $oP->add("<h1>" . MetaModel::GetClassIcon($sClass) . "&nbsp;" . Dict::Format('UI:CreationTitle_Class', $sClassLabel) . "</h1>\n");
+                        $oP->add("<div class=\"wizContainer\">\n");
+                    }
+                    if (count($aIssues) > 0) {
+                        $sIssueDesc = Dict::Format('UI:ObjectCouldNotBeWritten', implode(', ', $aIssues));
+                        $oP->AddHeaderMessage($sIssueDesc, 'message_error');
+                    }
 
-					$oObj = MetaModel::GetObject(get_class($oObj), $oObj->GetKey()); //Workaround: reload the object so that the linkedset are displayed properly
+                    $aCopyArgs = [];
+                    $aCopyArgs['exec_module'] = utils::ReadParam('exec_module', null, false, 'raw_data');
+                    $aCopyArgs['exec_page'] = utils::ReadParam('exec_page', null, false, 'raw_data');
+                    $aCopyArgs['exec_env'] = utils::ReadParam('exec_env', utils::GetCurrentEnvironment());
+                    $aCopyArgs['rule'] = utils::ReadPostedParam('rule', '');
+                    $aCopyArgs['source_id'] = utils::ReadPostedParam('source_id', '');
+                    $aCopyArgs['source_class'] = utils::ReadPostedParam('source_class', '');
+                    $aCopyArgs['action'] = utils::ReadPostedParam('action', null, false, 'raw_data');
+                    cmdbAbstractObject::DisplayCreationForm($oP, $sClass, $oObj, [], $aCopyArgs);
 
-					$sNextAction = utils::ReadPostedParam('next_action', '');
-					if (!empty($sNextAction))
-					{
-						$oP->add("<h1>$sMessage</h1>");
-						/** @var \CMDBObject $oObj */
-						ApplyNextAction($oP, $oObj, $sNextAction);
-					}
-					else
-					{
-						// Nothing more to do
-						ReloadAndDisplay($oP, $oObj, 'create', $sMessage, 'ok');
-					}
-				}
-				else
-				{
-					// Found issues, explain and give the user a second chance
-					//
-					if (version_compare(ITOP_DESIGN_LATEST_VERSION , '3.0') < 0) {
-						$oP->set_title(Dict::Format('UI:CreationPageTitle_Class', $sClassLabel));
-						$oP->add("<h1>".MetaModel::GetClassIcon($sClass)."&nbsp;".Dict::Format('UI:CreationTitle_Class', $sClassLabel)."</h1>\n");
-						$oP->add("<div class=\"wizContainer\">\n");
-					}
-
-					$sIssueDesc = Dict::Format('UI:ObjectCouldNotBeWritten', implode(', ', $aIssues));
-					$oP->AddHeaderMessage($sIssueDesc, 'message_error');
-
-					$aCopyArgs = [];
-					$aCopyArgs['exec_module'] = utils::ReadParam('exec_module', null, false, 'raw_data');
-					$aCopyArgs['exec_page'] = utils::ReadParam('exec_page', null, false, 'raw_data');
-					$aCopyArgs['exec_env'] = utils::ReadParam('exec_env', utils::GetCurrentEnvironment());
-					$aCopyArgs['rule'] = utils::ReadPostedParam('rule', '');
-					$aCopyArgs['source_id'] = utils::ReadPostedParam('source_id', '');
-					$aCopyArgs['source_class'] = utils::ReadPostedParam('source_class', '');
-					$aCopyArgs['action'] = utils::ReadPostedParam('action', null, false, 'raw_data');
-					cmdbAbstractObject::DisplayCreationForm($oP, $sClass, $oObj, [], $aCopyArgs);
-
-					if (version_compare(ITOP_DESIGN_LATEST_VERSION , '3.0') < 0) {
-						$oP->add("</div>\n");
-					}
-				$sIssueDesc = Dict::Format('UI:ObjectCouldNotBeWritten', implode(', ', $aIssues));
-				$oP->add_ready_script("alert('".addslashes($sIssueDesc)."');");
-				}
+                    if (version_compare(ITOP_DESIGN_LATEST_VERSION, '3.0') < 0) {
+                        $oP->add("</div>\n");
+                    }
+               }
 			}
 			break;
 
