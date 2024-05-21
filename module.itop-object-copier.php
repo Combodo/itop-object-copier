@@ -17,6 +17,7 @@ SetupWebPage::AddModule(
         'dependencies' => array(),
         'mandatory' => false,
 		'visible' => true,
+		'installer' => iTopObjectCopierInstaller::class,
 
 		// Components
 		//
@@ -179,3 +180,36 @@ SetupWebPage::AddModule(
 		),
 	)
 );
+
+class iTopObjectCopierInstaller extends ModuleInstallerAPI
+{
+	/**
+	 * @inheritDoc
+	 */
+	public static function BeforeWritingConfig(Config $oConfiguration)
+	{
+		// Filter invalid rules
+		static::RemoveInvalidRules($oConfiguration);
+
+		return $oConfiguration;
+	}
+
+	/**
+	 * Walk over all predefined rules and remove the ones pointing to an invalid class
+	 *
+	 * @param Config $oConfig
+	 * @return void
+	 */
+	protected static function RemoveInvalidRules(Config &$oConfig)
+	{
+		/** @var array $aRules */
+		$aRules = $oConfig->GetModuleSetting('itop-object-copier', 'rules', []);
+
+		$aRules = array_filter($aRules, function ($aRule){
+			return MetaModel::IsValidClass($aRule['dest_class']);
+		});
+
+		$oConfig->SetModuleSetting('itop-object-copier', 'rules', $aRules);
+	}
+
+}
