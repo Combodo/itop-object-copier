@@ -206,7 +206,7 @@ class iTopObjectCopierInstaller extends ModuleInstallerAPI
 		$aRules = $oConfig->GetModuleSetting('itop-object-copier', 'rules', []);
 
 		$aRules = array_filter($aRules, function ($aRule){
-			return MetaModel::IsValidClass($aRule['dest_class']);
+			return empty($aRule['dest_class']) || MetaModel::IsValidClass($aRule['dest_class']);
 		});
 
 		$oConfig->SetModuleSetting('itop-object-copier', 'rules', $aRules);
