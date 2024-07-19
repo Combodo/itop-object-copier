@@ -283,6 +283,12 @@ try
 							// Such attributes are parsed on the server side
 							$aCurrentValues[$sAttCode] = $oObjToClone->GetEditValue($sAttCode);
 						}
+						else if ($oAttDef instanceof AttributeTagSet)
+						{
+							// N°7614 - Object copier wrongly force AttributeLinksetIndirect fields displayed as property
+							// value for attribute AttributeTagSet is an ormTagSet, it needs to be converted to json manually
+							$aCurrentValues[$sAttCode] = $oAttDef->GetJsonForWidget($oObjToClone->Get($sAttCode));
+						}
 						else
 						{
 							$aCurrentValues[$sAttCode] = $oObjToClone->Get($sAttCode);
