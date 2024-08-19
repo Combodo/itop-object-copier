@@ -131,7 +131,7 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 		}
 		if (($aRuleData['dest_class'] != '') && !MetaModel::IsValidClass($aRuleData['dest_class']))
 		{
-			self::LogWarning($iRule, 'dest_class "'.$aRuleData['dest_class'].'" is not a valid class');
+			IssueLog::Debug(self::GetLogMessage($iRule, 'dest_class "'.$aRuleData['dest_class'].'" is not a valid class'));
 			$bRet = false;
 		}
 		return $bRet;
