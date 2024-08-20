@@ -271,6 +271,7 @@ try
 					$oP->add("</div>\n");
 				}
 				$aCurrentValues = array();
+				$aTagValues = array();
 				foreach (MetaModel::ListAttributeDefs(get_class($oObjToClone)) as $sAttCode => $oAttDef)
 				{
 					if (!$oAttDef->IsScalar()) continue;
@@ -294,13 +295,62 @@ try
 							$aCurrentValues[$sAttCode] = $oObjToClone->Get($sAttCode);
 						}
 					}
+					
+					if($oAttDef instanceof AttributeTagSet && $oObjToClone->Get($sAttCode) !== null) {
+					
+						/** @var \ormTagSet $oSet Tag set */
+						$oSet = $oObjToClone->Get($sAttCode);
+						$aTagValues[$sAttCode] = $oSet->GetValues();
+						
+					}
+					
 				}
 				$sCurrentValues = json_encode($aCurrentValues);
+				$sTagValues = json_encode($aTagValues);
+				
+				$oP->add_script(
+<<<JS
+
+// Hack: add the tag set values as newly added
+// Selectize uses 'orig_value' to add the existing tags in the control. However, this leaves us with an empty 'added' array upon submit. Hence, interference is needed before submit.
+function TagFixer() {
+	
+	var aTagValues = $sTagValues;
+
+	Object.keys(aTagValues).forEach(function(sAttCode) {
+		
+		// Form submits attribute values from the DOM elements
+		// Update orig_value to empty and move remaining elements to added
+		
+		var sVal = $('#2_' + sAttCode).val();
+		var oVal = JSON.parse(sVal);
+		
+		// First obtain originally copied values that were not removed
+		var aNewAdded = $(oVal.orig_value).not(oVal.removed).get();
+		
+		// New values might have been added
+		aNewAdded = $.merge(aNewAdded, oVal.added);
+		
+		oVal.orig_value = [];
+		oVal.added = aNewAdded;
+		oVal.removed = [];
+		
+		$('#2_' + sAttCode).val(JSON.stringify(oVal));
+	
+	});
+	
+}
+
+JS
+				);
 
 				$oP->add_ready_script(
 					<<<EOF
 // Cancel => Back to details of the object we come from
 $('#form_2 button.cancel').click( function() { BackToDetails('$sSourceClass', $iSourceId, '')} );
+
+// Hack: call method to fix tags
+$('#form_2').attr('onsubmit', 'TagFixer(); ' + $('#form_2').attr('onsubmit'));
 
 // Hack: add the hidden (preset) fields into the Wizard Helper data (ajax autocomplete and widget reloads)
 oWizardHelper.ToJSON_original = oWizardHelper.ToJSON;
