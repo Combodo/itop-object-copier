@@ -14,7 +14,9 @@ SetupWebPage::AddModule(
 
         // Setup
         //
-        'dependencies' => array(),
+        'dependencies' => [
+            'itop-structure/3.2.0',
+        ],
         'mandatory' => false,
 		'visible' => true,
 
@@ -44,7 +46,7 @@ SetupWebPage::AddModule(
 			'rules' => array(
 				'clone_location' => array(
 					'source_scope' => 'SELECT Location',
-					'allowed_profiles' => 'Administrator,Configuration Manager',
+					'allowed_profiles' => 'Administrator,SuperUser,Configuration Manager',
 					'menu_label' => 'Clone...', // Label or dictionary entry
 					'menu_label/FR FR' => 'Cloner...', // Label
 					// Tooltip is needed if the action is in "shortcut_actions" 
@@ -65,7 +67,7 @@ SetupWebPage::AddModule(
 				),
 				'child_userrequest' => array(
 					'source_scope' => "SELECT UserRequest WHERE status NOT IN ('resolved','closed')",
-					'allowed_profiles' => 'Support Agent,Administrator',
+					'allowed_profiles' => 'Support Agent,SuperUser,Administrator',
 					'menu_label' => 'Create a child request...', // Label or dictionary entry
 					'menu_label/FR FR' => 'Créer une demande fille...', // Label
 					'menu_tooltip' => 'Create a child request of this request...',
@@ -85,7 +87,7 @@ SetupWebPage::AddModule(
 				),
 				'userrequest_from_person' => array(
 					'source_scope' => 'SELECT Person',
-					'allowed_profiles' => 'Support Agent,Administrator',
+					'allowed_profiles' => 'Support Agent,SuperUser,Administrator',
 					'menu_label' => 'Create a user request...',
 					'menu_label/FR FR' => 'Créer une demande utilisateur...',
 					'menu_tooltip' => 'Create a user request for this person...',
@@ -105,7 +107,7 @@ SetupWebPage::AddModule(
 				),
 				'userrequest_from_ci' => array(
 					'source_scope' => 'SELECT FunctionalCI',
-					'allowed_profiles' => 'Support Agent,Administrator',
+					'allowed_profiles' => 'Support Agent,SuperUser,Administrator',
 					'menu_label' => 'Create a user request...',
 					'menu_label/FR FR' => 'Créer une demande utilisateur...',
 					'menu_tooltip' => 'Create a user request for this CI...',
@@ -128,7 +130,7 @@ SetupWebPage::AddModule(
 					'menu_tooltip/FR FR' => 'Cloner cet élément...',
 					'icon' => 'fas fa-clone',
 					'source_scope' => 'SELECT FunctionalCI',
-					'allowed_profiles' => 'Administrator,Configuration Manager',
+					'allowed_profiles' => 'Administrator,SuperUser,Configuration Manager',
 					'dest_class' => '', // Same class as the source object
 					'preset' => array( // Series of actions to preset the object in the creation form
 						'clone_scalars(*)',
@@ -139,7 +141,7 @@ SetupWebPage::AddModule(
 				),
 				'userrequest_from_log' => array(
 					'source_scope' => 'SELECT UserRequest WHERE status IN (\'closed\')',
-					'allowed_profiles' => 'Support Agent,Administrator',
+					'allowed_profiles' => 'Support Agent,SuperUser,Administrator',
 					'menu_label' => 'Create ticket with last log...',
 					'menu_label/FR FR' => 'Créer une demande depuis le journal...',
 					'menu_tooltip' => 'Create a ticket based on last log entry...',
