@@ -289,6 +289,13 @@ try
 							// value for attribute AttributeTagSet is an ormTagSet, it needs to be converted to json manually
 							$aCurrentValues[$sAttCode] = $oAttDef->GetJsonForWidget($oObjToClone->Get($sAttCode));
 						}
+						else if ($oAttDef instanceof AttributeCaseLog)
+						{
+							// AttributeCaseLog returns an ormCaseLog object which is not JSON-serializable via json_encode.
+							// GetEditValue() returns only the pending (new) entry as a plain string, which is what
+							// the WizardHelper widget expects as current value.
+							$aCurrentValues[$sAttCode] = $oAttDef->GetEditValue($oObjToClone->Get($sAttCode));
+						}
 						else
 						{
 							$aCurrentValues[$sAttCode] = $oObjToClone->Get($sAttCode);
