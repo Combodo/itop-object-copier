@@ -163,7 +163,7 @@ SetupWebPage::AddModule(
 				),
 				'MailInboxStandardToMailInboxOAuth' => array(
 					'source_scope' => 'SELECT MailInboxStandard WHERE finalclass = "MailInboxStandard"',
-					'allowed_profiles' => 'Administrator',
+					'allowed_profiles' => 'Administrator,SuperUser',
 					'menu_label' => 'Create OAuth 2.0 Mail Inbox...',
 					'menu_label/FR FR' => 'Créer une Boite mail OAuth 2.0...',
 					'form_label' => 'Create new OAuth 2.0 Mail Inbox from %1$s',
