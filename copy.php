@@ -115,8 +115,7 @@ try {
 	switch ($operation) {
 		case 'new': // Form to create a new object
 		case 'apply_new': // Creation of a new object
-            $oP->LinkScriptFromAppRoot("js/wizardhelper.js");
-            $oP->LinkScriptFromAppRoot("js/wizard.utils.js");
+			$oP->LinkScriptFromAppRoot("js/wizardhelper.js");
 			break;
 	}
 
