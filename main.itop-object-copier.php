@@ -165,12 +165,11 @@ class iTopObjectCopier implements iPopupMenuExtension, iObjectCopierActionProvid
 			$aUserProfiles = array();
 			if (!is_null($oUser))
 			{
-				$oProfileSet = $oUser->Get('profile_list');
-				while ($oProfile = $oProfileSet->Fetch())
-				{
-					$aUserProfiles[$oProfile->Get('profile')] = true;
-				}
-			}
+                $aProfiles = UserRights::ListProfiles();
+                foreach ($aProfiles as $sProfile) {
+                    $aUserProfiles[$sProfile] = true;
+                }
+            }
 
 			foreach($aRules as $iRule => $aRuleData)
 			{
